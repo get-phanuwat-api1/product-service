@@ -16,6 +16,7 @@ type payload struct {
 }
 
 func TestField_UnmarshalJSON(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		body      string
@@ -50,6 +51,7 @@ func TestField_UnmarshalJSON(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var p payload
 			require.NoError(t, json.Unmarshal([]byte(tt.body), &p))
 			assert.Equal(t, tt.wantName, p.Name)
@@ -59,12 +61,14 @@ func TestField_UnmarshalJSON(t *testing.T) {
 }
 
 func TestField_UnmarshalJSON_TypeMismatch(t *testing.T) {
+	t.Parallel()
 	var p payload
 	err := json.Unmarshal([]byte(`{"price": "abc"}`), &p)
 	assert.Error(t, err)
 }
 
 func TestField_Ptr(t *testing.T) {
+	t.Parallel()
 	assert.Nil(t, optional.Undefined[string]().Ptr())
 	assert.Nil(t, optional.Null[string]().Ptr())
 	got := optional.Of("x").Ptr()
@@ -73,6 +77,7 @@ func TestField_Ptr(t *testing.T) {
 }
 
 func TestField_MarshalJSON(t *testing.T) {
+	t.Parallel()
 	b, err := json.Marshal(payload{Name: optional.Of("a"), Price: optional.Null[float64]()})
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"name":"a","price":null}`, string(b))

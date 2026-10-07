@@ -16,6 +16,7 @@ import (
 func ptr[T any](v T) *T { return &v }
 
 func TestNewProduct(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		inName      string
@@ -39,6 +40,7 @@ func TestNewProduct(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			p, err := model.NewProduct(tt.inName, tt.desc, tt.price, tt.salePrice)
 			if tt.wantErrCode != "" {
 				require.Error(t, err)
@@ -56,6 +58,7 @@ func TestNewProduct(t *testing.T) {
 }
 
 func TestNewProduct_TrimsName(t *testing.T) {
+	t.Parallel()
 	p, err := model.NewProduct("  Apple  ", nil, 1, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "Apple", p.Name)
@@ -66,6 +69,7 @@ func baseProduct() *model.Product {
 }
 
 func TestProduct_ApplyPatch(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		patch       model.ProductPatch
@@ -126,6 +130,7 @@ func TestProduct_ApplyPatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			p := baseProduct()
 			err := p.ApplyPatch(tt.patch)
 			if tt.wantErrCode != "" {
@@ -141,6 +146,7 @@ func TestProduct_ApplyPatch(t *testing.T) {
 }
 
 func TestProductPatch_IsEmpty(t *testing.T) {
+	t.Parallel()
 	assert.True(t, model.ProductPatch{}.IsEmpty())
 	assert.False(t, model.ProductPatch{Description: optional.Null[string]()}.IsEmpty())
 }

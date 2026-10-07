@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -17,9 +18,13 @@ import (
 	"github.com/phanuwat/product-service/pkg/requestctx"
 )
 
+func TestMain(m *testing.M) {
+	gin.SetMode(gin.TestMode) // global: set once, before parallel tests start
+	os.Exit(m.Run())
+}
+
 func newEngine(t *testing.T, buf *bytes.Buffer) *gin.Engine {
 	t.Helper()
-	gin.SetMode(gin.TestMode)
 	l, err := logger.NewLogger(buf, logger.Options{Level: "debug"})
 	require.NoError(t, err)
 
@@ -63,6 +68,7 @@ func logLines(t *testing.T, buf *bytes.Buffer) []map[string]any {
 }
 
 func TestRequestID_PropagatesIncomingHeader(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	w := get(newEngine(t, &buf), "/echo", map[string]string{"X-Request-ID": "abc-123", "X-User-ID": "user-1"})
 
@@ -71,6 +77,7 @@ func TestRequestID_PropagatesIncomingHeader(t *testing.T) {
 }
 
 func TestRequestID_GeneratesWhenMissingOrUnsafe(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	r := newEngine(t, &buf)
 
@@ -84,6 +91,7 @@ func TestRequestID_GeneratesWhenMissingOrUnsafe(t *testing.T) {
 }
 
 func TestAccessLog_WritesRequestLine(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	get(newEngine(t, &buf), "/echo", map[string]string{"X-Request-ID": "req-9", "X-User-ID": "user-9"})
 
@@ -100,6 +108,7 @@ func TestAccessLog_WritesRequestLine(t *testing.T) {
 }
 
 func TestAccessLog_WarnOn4xxWithErrorCode(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	get(newEngine(t, &buf), "/bad", nil)
 
@@ -110,12 +119,14 @@ func TestAccessLog_WarnOn4xxWithErrorCode(t *testing.T) {
 }
 
 func TestAccessLog_SkipsPrefixes(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	get(newEngine(t, &buf), "/health", nil)
 	assert.Empty(t, buf.String())
 }
 
 func TestRecovery_Returns500AndLogsPanic(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	w := get(newEngine(t, &buf), "/panic", map[string]string{"X-Request-ID": "req-p"})
 

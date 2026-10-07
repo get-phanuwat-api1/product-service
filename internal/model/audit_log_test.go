@@ -10,6 +10,7 @@ import (
 )
 
 func TestProductSnapshot_Equal(t *testing.T) {
+	t.Parallel()
 	a := baseProduct().Snapshot()
 
 	assert.True(t, a.Equal(baseProduct().Snapshot()), "same values behind different pointers")
@@ -28,6 +29,7 @@ func TestProductSnapshot_Equal(t *testing.T) {
 }
 
 func TestNewProductAuditLog_Create(t *testing.T) {
+	t.Parallel()
 	after := baseProduct().Snapshot()
 
 	log, err := model.NewProductAuditLog(model.AuditActionProductCreated, nil, after, "user-1", "req-1")
@@ -43,6 +45,7 @@ func TestNewProductAuditLog_Create(t *testing.T) {
 }
 
 func TestNewProductAuditLog_Update(t *testing.T) {
+	t.Parallel()
 	before := baseProduct().Snapshot()
 	p := baseProduct()
 	p.Description = nil

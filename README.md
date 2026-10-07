@@ -212,9 +212,23 @@ Response `200`: `{"successful": true, "error_code": ""}`
 | (extra) Middleware / logger tests | `internal/middleware`, `pkg/logger` | request ID, actor, access log, recovery | – |
 
 ```bash
-make test        # run everything (Docker must be running)
-make test-unit   # no Docker needed
+make test        # run everything with -race (Docker must be running)
+make test-unit   # unit tests only with -race, no Docker needed
+make fuzz        # run fuzz tests (FUZZTIME=30s each by default)
 make cover       # coverage
+make mocks       # regenerate mocks after changing an interface
 ```
 
 To use an existing database instead of testcontainers, set `TEST_DATABASE_URL=postgres://...`
+
+### Unit test conventions
+
+- **Table-driven tests with subtests.** Pure unit tests run with `t.Parallel()`. Tests that share a database (repository, component) run sequentially.
+- **Mocks are generated** by [mockery](https://github.com/vektra/mockery) from the interfaces listed in [`.mockery.yml`](.mockery.yml) into `internal/mocks/`. Use the typed API: `repo.EXPECT().CreateProduct(...).Return(nil)`. Mocks built with `mocks.NewXxx(t)` fail the test automatically if an expectation is not met.
+  - `mocks.FakeTransactor` is a hand-written fake, because it only needs to run `fn`.
+- **No monkey patching.** Every dependency is an interface injected through a constructor, so tests never touch global state.
+- **Fuzz tests** check invariants over random inputs:
+  - `FuzzField_MatchesPointerDecoding`: `optional.Field` decodes JSON exactly like `*T`, plus key presence.
+  - `FuzzProduct_ApplyPatch`: a failed patch never mutates the product, and a successful patch always yields a valid product that keeps every undefined field.
+
+  The seed corpus runs as part of `go test`.

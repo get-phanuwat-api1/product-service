@@ -14,7 +14,7 @@ import (
 type AuditLogRepository interface {
 	// CreateAuditLog inserts the record and fills its ID and CreatedAt.
 	CreateAuditLog(ctx context.Context, log *model.AuditLog) error
-	// ListAuditLogsByEntity returns the history of one entity, oldest first.
+	// ListAuditLogsByEntity returns the history of one entity, oldest first (id is insertion order).
 	ListAuditLogsByEntity(ctx context.Context, entityType string, entityID int64) ([]model.AuditLog, error)
 }
 
@@ -46,7 +46,7 @@ func (r *auditLogRepository) ListAuditLogsByEntity(ctx context.Context, entityTy
 		SELECT id, action, entity_type, entity_id, actor, request_id, before_data, after_data, created_at
 		FROM audit_logs
 		WHERE entity_type = $1 AND entity_id = $2
-		ORDER BY created_at, id`
+		ORDER BY id`
 	rows, err := r.pool.Query(ctx, q, entityType, entityID)
 	if err != nil {
 		return nil, fmt.Errorf("list audit logs: %w", err)

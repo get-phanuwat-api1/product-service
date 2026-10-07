@@ -3,6 +3,7 @@ package database
 import "testing"
 
 func TestToMigrateURL(t *testing.T) {
+	t.Parallel()
 	tests := map[string]string{
 		"postgres://u:p@h:5432/db?sslmode=disable":              "pgx5://u:p@h:5432/db?sslmode=disable",
 		"postgresql://u:p@h/db":                                 "pgx5://u:p@h/db",

@@ -15,6 +15,7 @@ import (
 )
 
 func TestNewLogger_AddsContextAttributes(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	l, err := logger.NewLogger(&buf, logger.Options{Level: "info", Format: "json", Service: "product-service"})
 	require.NoError(t, err)
@@ -34,6 +35,7 @@ func TestNewLogger_AddsContextAttributes(t *testing.T) {
 }
 
 func TestNewLogger_NoContextValues(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	l, err := logger.NewLogger(&buf, logger.Options{})
 	require.NoError(t, err)
@@ -47,6 +49,7 @@ func TestNewLogger_NoContextValues(t *testing.T) {
 }
 
 func TestNewLogger_LevelFilter(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	l, err := logger.NewLogger(&buf, logger.Options{Level: "warn"})
 	require.NoError(t, err)
@@ -58,6 +61,7 @@ func TestNewLogger_LevelFilter(t *testing.T) {
 }
 
 func TestNewLogger_TextFormat(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	l, err := logger.NewLogger(&buf, logger.Options{Format: "text"})
 	require.NoError(t, err)
@@ -66,6 +70,7 @@ func TestNewLogger_TextFormat(t *testing.T) {
 }
 
 func TestNewLogger_InvalidOptions(t *testing.T) {
+	t.Parallel()
 	_, err := logger.NewLogger(&bytes.Buffer{}, logger.Options{Level: "loud"})
 	assert.Error(t, err)
 	_, err = logger.NewLogger(&bytes.Buffer{}, logger.Options{Format: "xml"})
@@ -73,6 +78,7 @@ func TestNewLogger_InvalidOptions(t *testing.T) {
 }
 
 func TestParseLevel(t *testing.T) {
+	t.Parallel()
 	for in, want := range map[string]slog.Level{
 		"": slog.LevelInfo, "debug": slog.LevelDebug, "INFO": slog.LevelInfo,
 		"warn": slog.LevelWarn, "error": slog.LevelError,

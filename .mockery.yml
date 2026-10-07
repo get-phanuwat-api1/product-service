@@ -1,0 +1,18 @@
+# Mock generation config (mockery v3). Regenerate with: make mocks
+template: testify
+template-data:
+  unroll-variadic: true
+force-file-write: true
+formatter: goimports
+dir: internal/mocks
+pkgname: mocks
+structname: "{{.InterfaceName}}"
+filename: "{{.InterfaceName | snakecase}}.go"
+packages:
+  github.com/phanuwat/product-service/internal/repository:
+    interfaces:
+      ProductRepository: {}
+      AuditLogRepository: {}
+  github.com/phanuwat/product-service/internal/service:
+    interfaces:
+      ProductService: {}
