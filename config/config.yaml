@@ -1,0 +1,21 @@
+# Default configuration for local development.
+# Every key can be overridden by an environment variable:
+# replace "." with "_" and use upper case, e.g. database.host -> DATABASE_HOST
+app:
+  name: product-service
+  env: local
+
+server:
+  port: 8080
+  read_timeout: 10s
+  write_timeout: 10s
+  shutdown_timeout: 10s
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  name: product
+  sslmode: disable
+  max_conns: 10

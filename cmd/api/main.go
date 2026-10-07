@@ -7,45 +7,49 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
-	"time"
 
-	"github.com/phanuwat/product-service/internal/app"
-	"github.com/phanuwat/product-service/internal/config"
-	"github.com/phanuwat/product-service/internal/repository/postgres"
+	"github.com/phanuwat/product-service/config"
+	"github.com/phanuwat/product-service/internal/container"
+	"github.com/phanuwat/product-service/pkg/database"
 )
 
-//	@title			Product Service API
-//	@version		1.0
-//	@description	Product REST API built with Clean Architecture, Gin and PostgreSQL.
-//	@BasePath		/
+// @title			Product Service API
+// @version		1.0
+// @description	Product REST API (handler -> service -> repository) with Gin and PostgreSQL.
+// @BasePath		/
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	cfg := config.Load()
+
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Error("load config", "error", err)
+		os.Exit(1)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL)
+	pool, err := database.NewPostgresPool(ctx, cfg.Database.DSN())
 	if err != nil {
 		logger.Error("connect database", "error", err)
 		os.Exit(1)
 	}
 	defer pool.Close()
 
-	if err := postgres.Migrate(ctx, pool); err != nil {
-		logger.Error("migrate database", "error", err)
-		os.Exit(1)
-	}
+	c := container.New(pool, logger)
 
+	port := strconv.Itoa(cfg.Server.Port)
 	srv := &http.Server{
-		Addr:              ":" + cfg.HTTPPort,
-		Handler:           app.NewHandler(pool, logger),
-		ReadHeaderTimeout: 5 * time.Second,
+		Addr:         ":" + port,
+		Handler:      c.Router,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
 	go func() {
-		logger.Info("server started", "addr", srv.Addr, "swagger", "http://localhost:"+cfg.HTTPPort+"/api-docs")
+		logger.Info("server started", "addr", srv.Addr, "swagger", "http://localhost:"+port+"/api-docs")
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("server error", "error", err)
 			stop()
@@ -54,7 +58,7 @@ func main() {
 
 	<-ctx.Done()
 	logger.Info("shutting down")
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		logger.Error("graceful shutdown failed", "error", err)

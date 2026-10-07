@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/http.CreateProductRequest"
+                            "$ref": "#/definitions/dto.CreateProductRequest"
                         }
                     }
                 ],
@@ -43,19 +43,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/http.CreateProductResponse"
+                            "$ref": "#/definitions/dto.CreateProductResponse"
                         }
                     },
                     "400": {
                         "description": "INVALID_REQUEST_BODY | INVALID_NAME | INVALID_PRICE | INVALID_SALE_PRICE",
                         "schema": {
-                            "$ref": "#/definitions/http.CreateProductResponse"
+                            "$ref": "#/definitions/dto.CreateProductResponse"
                         }
                     },
                     "500": {
                         "description": "INTERNAL_SERVER_ERROR",
                         "schema": {
-                            "$ref": "#/definitions/http.CreateProductResponse"
+                            "$ref": "#/definitions/dto.CreateProductResponse"
                         }
                     }
                 }
@@ -88,7 +88,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/http.PatchProductRequest"
+                            "$ref": "#/definitions/dto.PatchProductRequest"
                         }
                     }
                 ],
@@ -96,25 +96,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.BaseResponse"
+                            "$ref": "#/definitions/dto.BaseResponse"
                         }
                     },
                     "400": {
                         "description": "INVALID_PRODUCT_ID | INVALID_REQUEST_BODY | INVALID_NAME | INVALID_PRICE | INVALID_SALE_PRICE",
                         "schema": {
-                            "$ref": "#/definitions/http.BaseResponse"
+                            "$ref": "#/definitions/dto.BaseResponse"
                         }
                     },
                     "404": {
                         "description": "PRODUCT_NOT_FOUND",
                         "schema": {
-                            "$ref": "#/definitions/http.BaseResponse"
+                            "$ref": "#/definitions/dto.BaseResponse"
                         }
                     },
                     "500": {
                         "description": "INTERNAL_SERVER_ERROR",
                         "schema": {
-                            "$ref": "#/definitions/http.BaseResponse"
+                            "$ref": "#/definitions/dto.BaseResponse"
                         }
                     }
                 }
@@ -122,7 +122,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "http.BaseResponse": {
+        "dto.BaseResponse": {
             "type": "object",
             "properties": {
                 "error_code": {
@@ -135,7 +135,7 @@ const docTemplate = `{
                 }
             }
         },
-        "http.CreateProductRequest": {
+        "dto.CreateProductRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -160,13 +160,13 @@ const docTemplate = `{
                 }
             }
         },
-        "http.CreateProductResponse": {
+        "dto.CreateProductResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/http.ProductData"
+                            "$ref": "#/definitions/dto.ProductData"
                         }
                     ],
                     "x-nullable": true
@@ -181,7 +181,7 @@ const docTemplate = `{
                 }
             }
         },
-        "http.PatchProductRequest": {
+        "dto.PatchProductRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -204,7 +204,7 @@ const docTemplate = `{
                 }
             }
         },
-        "http.ProductData": {
+        "dto.ProductData": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -247,7 +247,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Product Service API",
-	Description:      "Product REST API built with Clean Architecture, Gin and PostgreSQL.",
+	Description:      "Product REST API (handler -> service -> repository) with Gin and PostgreSQL.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -1,5 +1,5 @@
 // Package component runs end-to-end tests within the service boundary:
-// real HTTP router + usecase + repository + PostgreSQL (testcontainers).
+// real HTTP router + handler + service + repository + PostgreSQL (testcontainers).
 package component
 
 import (
@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/phanuwat/product-service/internal/app"
-	"github.com/phanuwat/product-service/internal/testutil"
+	"github.com/phanuwat/product-service/internal/container"
+	"github.com/phanuwat/product-service/test/testutil"
 )
 
 var (
@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	pool = p
-	server = httptest.NewServer(app.NewHandler(pool, slog.New(slog.NewTextHandler(io.Discard, nil))))
+	server = httptest.NewServer(container.New(pool, slog.New(slog.NewTextHandler(io.Discard, nil))).Router)
 
 	code := m.Run()
 	server.Close()

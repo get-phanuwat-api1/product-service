@@ -15,16 +15,25 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  api:
+  # Runs pending migrations once, then exits.
+  migrate:
     build: .
+    entrypoint: ["/app/migrate", "up"]
     environment:
-      HTTP_PORT: "8080"
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/product?sslmode=disable
-    ports:
-      - "8080:8080"
+      DATABASE_HOST: postgres
     depends_on:
       postgres:
         condition: service_healthy
+
+  api:
+    build: .
+    environment:
+      DATABASE_HOST: postgres # overrides database.host in config/config.yaml
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:

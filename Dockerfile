@@ -3,9 +3,12 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/product-service ./cmd/api
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api \
+ && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
 
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=build /out/product-service /product-service
+WORKDIR /app
+COPY --from=build /out/api /out/migrate /app/
+COPY config/config.yaml /app/config/config.yaml
 EXPOSE 8080
-ENTRYPOINT ["/product-service"]
+ENTRYPOINT ["/app/api"]
