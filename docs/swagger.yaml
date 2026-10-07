@@ -1,0 +1,164 @@
+basePath: /
+definitions:
+  http.BaseResponse:
+    properties:
+      error_code:
+        example: ""
+        type: string
+      successful:
+        example: true
+        type: boolean
+    type: object
+  http.CreateProductRequest:
+    properties:
+      description:
+        example: Latest model
+        type: string
+        x-nullable: true
+      name:
+        example: iPhone 17
+        type: string
+        x-nullable: "false"
+      price:
+        example: 42900
+        type: number
+        x-nullable: "false"
+      sale_price:
+        example: 39900
+        type: number
+        x-nullable: true
+    type: object
+  http.CreateProductResponse:
+    properties:
+      data:
+        allOf:
+        - $ref: '#/definitions/http.ProductData'
+        x-nullable: true
+      error_code:
+        example: ""
+        type: string
+      successful:
+        example: true
+        type: boolean
+    type: object
+  http.PatchProductRequest:
+    properties:
+      description:
+        example: Updated description
+        type: string
+        x-nullable: true
+      name:
+        example: iPhone 17 Pro
+        type: string
+      price:
+        example: 41900
+        type: number
+      sale_price:
+        example: 38900
+        type: number
+        x-nullable: true
+    type: object
+  http.ProductData:
+    properties:
+      created_at:
+        type: string
+      description:
+        example: Latest model
+        type: string
+        x-nullable: true
+      id:
+        example: 1
+        type: integer
+      name:
+        example: iPhone 17
+        type: string
+      price:
+        example: 42900
+        type: number
+      sale_price:
+        example: 39900
+        type: number
+        x-nullable: true
+      updated_at:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Product REST API built with Clean Architecture, Gin and PostgreSQL.
+  title: Product Service API
+  version: "1.0"
+paths:
+  /product:
+    post:
+      consumes:
+      - application/json
+      description: Create a new product. `description` and `sale_price` are nullable.
+      parameters:
+      - description: Product to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/http.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.CreateProductResponse'
+        "400":
+          description: INVALID_REQUEST_BODY | INVALID_NAME | INVALID_PRICE | INVALID_SALE_PRICE
+          schema:
+            $ref: '#/definitions/http.CreateProductResponse'
+        "500":
+          description: INTERNAL_SERVER_ERROR
+          schema:
+            $ref: '#/definitions/http.CreateProductResponse'
+      summary: Create product
+      tags:
+      - product
+  /product/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Partially update a product. Only keys present in the body are overwritten.
+        Omit a key to keep its current value; send `null` to clear `description` / `sale_price`.
+        `name` and `price` may be omitted but must not be `null`.
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/http.PatchProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.BaseResponse'
+        "400":
+          description: INVALID_PRODUCT_ID | INVALID_REQUEST_BODY | INVALID_NAME |
+            INVALID_PRICE | INVALID_SALE_PRICE
+          schema:
+            $ref: '#/definitions/http.BaseResponse'
+        "404":
+          description: PRODUCT_NOT_FOUND
+          schema:
+            $ref: '#/definitions/http.BaseResponse'
+        "500":
+          description: INTERNAL_SERVER_ERROR
+          schema:
+            $ref: '#/definitions/http.BaseResponse'
+      summary: Patch product
+      tags:
+      - product
+swagger: "2.0"
