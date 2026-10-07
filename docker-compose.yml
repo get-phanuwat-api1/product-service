@@ -28,6 +28,7 @@ services:
   api:
     build: .
     environment:
+      APP_ENV: docker         # non-"local" env switches gin to release mode
       DATABASE_HOST: postgres # overrides database.host in config/config.yaml
     ports:
       - "8080:8080"

@@ -2,6 +2,7 @@
 package router
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,17 +11,24 @@ import (
 
 	_ "github.com/phanuwat/product-service/docs" // generated swagger spec
 	"github.com/phanuwat/product-service/internal/handler"
+	"github.com/phanuwat/product-service/internal/middleware"
 )
 
-// New builds the gin engine with all routes registered.
-func New(productHandler *handler.ProductHandler) *gin.Engine {
+// NewRouter builds the gin engine with middleware and all routes registered.
+func NewRouter(logger *slog.Logger, productHandler *handler.ProductHandler) *gin.Engine {
 	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
+	// Order matters: request context first, recovery innermost so the access log sees the 500.
+	r.Use(
+		middleware.RequestID(),
+		middleware.Actor(),
+		middleware.AccessLog(logger, "/health", "/api-docs"),
+		middleware.Recovery(logger),
+	)
 
 	r.GET("/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
-	r.POST("/product", productHandler.Create)
-	r.PATCH("/product/:id", productHandler.Patch)
+	r.POST("/product", productHandler.CreateProduct)
+	r.PATCH("/product/:id", productHandler.PatchProductByID)
 
 	r.GET("/api-docs", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/api-docs/index.html") })
 	r.GET("/api-docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

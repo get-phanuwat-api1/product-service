@@ -37,8 +37,8 @@ type CreateProductResponse struct {
 	Data       *ProductData `json:"data" extensions:"x-nullable"`
 }
 
-// BaseResponse is the response of PATCH /product/{id}.
-type BaseResponse struct {
+// PatchProductResponse is the response of PATCH /product/{id}.
+type PatchProductResponse struct {
 	Successful bool   `json:"successful" example:"true"`
 	ErrorCode  string `json:"error_code" example:""`
 }

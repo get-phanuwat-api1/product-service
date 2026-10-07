@@ -21,6 +21,12 @@ type Config struct {
 	App      AppConfig      `mapstructure:"app"`
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
+	Log      LogConfig      `mapstructure:"log"`
+}
+
+type LogConfig struct {
+	Level  string `mapstructure:"level"`  // debug | info | warn | error
+	Format string `mapstructure:"format"` // json | text
 }
 
 type AppConfig struct {

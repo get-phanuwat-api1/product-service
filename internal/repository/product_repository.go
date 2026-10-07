@@ -15,10 +15,12 @@ import (
 
 // ProductRepository persists products.
 type ProductRepository interface {
-	Create(ctx context.Context, p *model.Product) error
-	// GetByIDForUpdate loads a product and locks the row when called inside a transaction.
-	GetByIDForUpdate(ctx context.Context, id int64) (*model.Product, error)
-	Update(ctx context.Context, p *model.Product) error
+	// CreateProduct inserts p and fills its ID and timestamps.
+	CreateProduct(ctx context.Context, p *model.Product) error
+	// GetProductByIDForUpdate loads a product and locks the row when called inside a transaction.
+	GetProductByIDForUpdate(ctx context.Context, id int64) (*model.Product, error)
+	// UpdateProduct overwrites all columns of p and refreshes its UpdatedAt.
+	UpdateProduct(ctx context.Context, p *model.Product) error
 }
 
 type productRepository struct {
@@ -29,7 +31,7 @@ func NewProductRepository(pool *pgxpool.Pool) ProductRepository {
 	return &productRepository{pool: pool}
 }
 
-func (r *productRepository) Create(ctx context.Context, p *model.Product) error {
+func (r *productRepository) CreateProduct(ctx context.Context, p *model.Product) error {
 	const q = `
 		INSERT INTO products (name, description, price, sale_price)
 		VALUES ($1, $2, $3, $4)
@@ -43,7 +45,7 @@ func (r *productRepository) Create(ctx context.Context, p *model.Product) error 
 	return nil
 }
 
-func (r *productRepository) GetByIDForUpdate(ctx context.Context, id int64) (*model.Product, error) {
+func (r *productRepository) GetProductByIDForUpdate(ctx context.Context, id int64) (*model.Product, error) {
 	q := `SELECT id, name, description, price, sale_price, created_at, updated_at
 	      FROM products WHERE id = $1`
 	if inTx(ctx) {
@@ -62,7 +64,7 @@ func (r *productRepository) GetByIDForUpdate(ctx context.Context, id int64) (*mo
 	return &p, nil
 }
 
-func (r *productRepository) Update(ctx context.Context, p *model.Product) error {
+func (r *productRepository) UpdateProduct(ctx context.Context, p *model.Product) error {
 	const q = `
 		UPDATE products
 		SET name = $2, description = $3, price = $4, sale_price = $5, updated_at = NOW()

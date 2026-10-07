@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/phanuwat/product-service/internal/container"
+	"github.com/phanuwat/product-service/pkg/logger"
 	"github.com/phanuwat/product-service/test/testutil"
 )
 
@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	pool = p
-	server = httptest.NewServer(container.New(pool, slog.New(slog.NewTextHandler(io.Discard, nil))).Router)
+	server = httptest.NewServer(container.NewContainer(pool, logger.NewDiscardLogger()).Router)
 
 	code := m.Run()
 	server.Close()
@@ -105,7 +105,7 @@ func loadProduct(t *testing.T, id int64) productData {
 }
 
 func TestCreateProduct(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 
 	t.Run("full body", func(t *testing.T) {
 		status, resp, keys := do(t, http.MethodPost, "/product",
@@ -166,7 +166,7 @@ func TestCreateProduct(t *testing.T) {
 }
 
 func TestPatchProduct(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 	const seed = `{"name":"Apple","description":"fresh","sale_price":90,"price":100}`
 
 	tests := []struct {
@@ -226,7 +226,7 @@ func TestPatchProduct(t *testing.T) {
 }
 
 func TestPatchProduct_Errors(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 	created := createProduct(t, `{"name":"Apple","description":"fresh","sale_price":90,"price":100}`)
 	path := fmt.Sprintf("/product/%d", created.ID)
 

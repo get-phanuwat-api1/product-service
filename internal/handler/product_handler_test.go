@@ -25,8 +25,8 @@ func setup(svc *mocks.ProductService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	h := handler.NewProductHandler(svc, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	r := gin.New()
-	r.POST("/product", h.Create)
-	r.PATCH("/product/:id", h.Patch)
+	r.POST("/product", h.CreateProduct)
+	r.PATCH("/product/:id", h.PatchProductByID)
 	return r
 }
 
@@ -38,9 +38,9 @@ func send(r http.Handler, method, path, body string) *httptest.ResponseRecorder 
 
 func ptr[T any](v T) *T { return &v }
 
-func TestCreate_MapsRequestToService(t *testing.T) {
+func TestCreateProduct_MapsRequestToService(t *testing.T) {
 	svc := new(mocks.ProductService)
-	svc.On("Create", mock.Anything, service.CreateProductInput{
+	svc.On("CreateProduct", mock.Anything, service.CreateProductInput{
 		Name: "Apple", Description: nil, Price: 10, SalePrice: ptr(8.0),
 	}).Return(&model.Product{ID: 7, Name: "Apple", Price: 10, SalePrice: ptr(8.0)}, nil).Once()
 
@@ -53,7 +53,7 @@ func TestCreate_MapsRequestToService(t *testing.T) {
 	svc.AssertExpectations(t)
 }
 
-func TestCreate_Errors(t *testing.T) {
+func TestCreateProduct_Errors(t *testing.T) {
 	tests := []struct {
 		name       string
 		body       string
@@ -71,7 +71,7 @@ func TestCreate_Errors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := new(mocks.ProductService)
 			if tt.svcErr != nil {
-				svc.On("Create", mock.Anything, mock.Anything).Return(nil, tt.svcErr).Once()
+				svc.On("CreateProduct", mock.Anything, mock.Anything).Return(nil, tt.svcErr).Once()
 			}
 
 			w := send(setup(svc), http.MethodPost, "/product", tt.body)
@@ -83,9 +83,9 @@ func TestCreate_Errors(t *testing.T) {
 	}
 }
 
-func TestPatch_MapsUndefinedAndNull(t *testing.T) {
+func TestPatchProductByID_MapsUndefinedAndNull(t *testing.T) {
 	svc := new(mocks.ProductService)
-	svc.On("Patch", mock.Anything, int64(5), model.ProductPatch{
+	svc.On("PatchProductByID", mock.Anything, int64(5), model.ProductPatch{
 		Name:        optional.Of("Banana"),
 		Description: optional.Null[string](),
 	}).Return(&model.Product{}, nil).Once()
@@ -97,7 +97,7 @@ func TestPatch_MapsUndefinedAndNull(t *testing.T) {
 	svc.AssertExpectations(t)
 }
 
-func TestPatch_Errors(t *testing.T) {
+func TestPatchProductByID_Errors(t *testing.T) {
 	tests := []struct {
 		name       string
 		path       string
@@ -116,7 +116,7 @@ func TestPatch_Errors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := new(mocks.ProductService)
 			if tt.svcErr != nil {
-				svc.On("Patch", mock.Anything, mock.Anything, mock.Anything).Return(nil, tt.svcErr).Once()
+				svc.On("PatchProductByID", mock.Anything, mock.Anything, mock.Anything).Return(nil, tt.svcErr).Once()
 			}
 
 			w := send(setup(svc), http.MethodPatch, tt.path, tt.body)

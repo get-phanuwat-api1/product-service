@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/product": {
             "post": {
-                "description": "Create a new product. ` + "`" + `description` + "`" + ` and ` + "`" + `sale_price` + "`" + ` are nullable.",
+                "description": "Create a new product. ` + "`" + `description` + "`" + ` and ` + "`" + `sale_price` + "`" + ` are nullable.\nA PRODUCT_CREATED audit log is recorded in the same transaction.",
                 "consumes": [
                     "application/json"
                 ],
@@ -27,8 +27,21 @@ const docTemplate = `{
                 "tags": [
                     "product"
                 ],
-                "summary": "Create product",
+                "summary": "Create a new product",
+                "operationId": "createProduct",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Correlation ID (generated when omitted, echoed in the response)",
+                        "name": "X-Request-ID",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Actor recorded in the audit log (default: anonymous)",
+                        "name": "X-User-ID",
+                        "in": "header"
+                    },
                     {
                         "description": "Product to create",
                         "name": "body",
@@ -63,7 +76,7 @@ const docTemplate = `{
         },
         "/product/{id}": {
             "patch": {
-                "description": "Partially update a product. Only keys present in the body are overwritten.\nOmit a key to keep its current value; send ` + "`" + `null` + "`" + ` to clear ` + "`" + `description` + "`" + ` / ` + "`" + `sale_price` + "`" + `.\n` + "`" + `name` + "`" + ` and ` + "`" + `price` + "`" + ` may be omitted but must not be ` + "`" + `null` + "`" + `.",
+                "description": "Only keys present in the body are overwritten.\nOmit a key to keep its current value; send ` + "`" + `null` + "`" + ` to clear ` + "`" + `description` + "`" + ` / ` + "`" + `sale_price` + "`" + `.\n` + "`" + `name` + "`" + ` and ` + "`" + `price` + "`" + ` may be omitted but must not be ` + "`" + `null` + "`" + `.\nA PRODUCT_UPDATED audit log (before/after) is recorded when a value actually changes.",
                 "consumes": [
                     "application/json"
                 ],
@@ -73,8 +86,21 @@ const docTemplate = `{
                 "tags": [
                     "product"
                 ],
-                "summary": "Patch product",
+                "summary": "Partially update a product by ID",
+                "operationId": "patchProductByID",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Correlation ID (generated when omitted, echoed in the response)",
+                        "name": "X-Request-ID",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Actor recorded in the audit log (default: anonymous)",
+                        "name": "X-User-ID",
+                        "in": "header"
+                    },
                     {
                         "type": "integer",
                         "description": "Product ID",
@@ -96,25 +122,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.BaseResponse"
+                            "$ref": "#/definitions/dto.PatchProductResponse"
                         }
                     },
                     "400": {
                         "description": "INVALID_PRODUCT_ID | INVALID_REQUEST_BODY | INVALID_NAME | INVALID_PRICE | INVALID_SALE_PRICE",
                         "schema": {
-                            "$ref": "#/definitions/dto.BaseResponse"
+                            "$ref": "#/definitions/dto.PatchProductResponse"
                         }
                     },
                     "404": {
                         "description": "PRODUCT_NOT_FOUND",
                         "schema": {
-                            "$ref": "#/definitions/dto.BaseResponse"
+                            "$ref": "#/definitions/dto.PatchProductResponse"
                         }
                     },
                     "500": {
                         "description": "INTERNAL_SERVER_ERROR",
                         "schema": {
-                            "$ref": "#/definitions/dto.BaseResponse"
+                            "$ref": "#/definitions/dto.PatchProductResponse"
                         }
                     }
                 }
@@ -122,19 +148,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.BaseResponse": {
-            "type": "object",
-            "properties": {
-                "error_code": {
-                    "type": "string",
-                    "example": ""
-                },
-                "successful": {
-                    "type": "boolean",
-                    "example": true
-                }
-            }
-        },
         "dto.CreateProductRequest": {
             "type": "object",
             "properties": {
@@ -201,6 +214,19 @@ const docTemplate = `{
                     "type": "number",
                     "x-nullable": true,
                     "example": 38900
+                }
+            }
+        },
+        "dto.PatchProductResponse": {
+            "type": "object",
+            "properties": {
+                "error_code": {
+                    "type": "string",
+                    "example": ""
+                },
+                "successful": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

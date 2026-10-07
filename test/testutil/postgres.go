@@ -66,10 +66,10 @@ func StartPostgres(ctx context.Context) (*pgxpool.Pool, func(), error) {
 	return pool, func() { pool.Close(); terminate() }, nil
 }
 
-// TruncateProducts clears the products table between tests.
-func TruncateProducts(t *testing.T, pool *pgxpool.Pool) {
+// TruncateTables clears all application tables between tests.
+func TruncateTables(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), "TRUNCATE products RESTART IDENTITY"); err != nil {
-		t.Fatalf("truncate products: %v", err)
+	if _, err := pool.Exec(context.Background(), "TRUNCATE products, audit_logs RESTART IDENTITY"); err != nil {
+		t.Fatalf("truncate tables: %v", err)
 	}
 }

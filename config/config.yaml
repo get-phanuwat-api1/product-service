@@ -11,6 +11,10 @@ server:
   write_timeout: 10s
   shutdown_timeout: 10s
 
+log:
+  level: info   # debug | info | warn | error
+  format: json  # json | text
+
 database:
   host: localhost
   port: 5432

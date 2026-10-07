@@ -13,71 +13,130 @@ import (
 	"github.com/phanuwat/product-service/internal/mocks"
 	"github.com/phanuwat/product-service/internal/model"
 	"github.com/phanuwat/product-service/internal/service"
+	"github.com/phanuwat/product-service/pkg/logger"
 	"github.com/phanuwat/product-service/pkg/optional"
+	"github.com/phanuwat/product-service/pkg/requestctx"
 )
 
 func ptr[T any](v T) *T { return &v }
 
-// --- Create ---
+type deps struct {
+	productRepo  *mocks.ProductRepository
+	auditLogRepo *mocks.AuditLogRepository
+	tx           *mocks.Transactor
+	svc          service.ProductService
+}
 
-func TestCreate_Success(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	svc := service.NewProductService(repo, &mocks.Transactor{})
+func newDeps() deps {
+	d := deps{
+		productRepo:  new(mocks.ProductRepository),
+		auditLogRepo: new(mocks.AuditLogRepository),
+		tx:           &mocks.Transactor{},
+	}
+	d.svc = service.NewProductService(d.productRepo, d.auditLogRepo, d.tx, logger.NewDiscardLogger())
+	return d
+}
 
-	repo.On("Create", mock.Anything, mock.MatchedBy(func(p *model.Product) bool {
+func requestCtx() context.Context {
+	return requestctx.WithActor(requestctx.WithRequestID(context.Background(), "req-1"), "user-1")
+}
+
+// --- CreateProduct ---
+
+func TestCreateProduct_StoresProductAndAuditLog(t *testing.T) {
+	d := newDeps()
+
+	d.productRepo.On("CreateProduct", mock.Anything, mock.MatchedBy(func(p *model.Product) bool {
 		return p.Name == "Apple" && p.Price == 10 && *p.SalePrice == 8
 	})).Run(func(args mock.Arguments) {
 		args.Get(1).(*model.Product).ID = 42
 	}).Return(nil).Once()
 
-	got, err := svc.Create(context.Background(), service.CreateProductInput{
+	d.auditLogRepo.On("CreateAuditLog", mock.Anything, mock.MatchedBy(func(l *model.AuditLog) bool {
+		return l.Action == model.AuditActionProductCreated &&
+			l.EntityType == "product" && l.EntityID == 42 &&
+			l.Actor == "user-1" && l.RequestID == "req-1" &&
+			l.BeforeData == nil &&
+			string(l.AfterData) == `{"id":42,"name":"Apple","description":null,"price":10,"sale_price":8}`
+	})).Return(nil).Once()
+
+	got, err := d.svc.CreateProduct(requestCtx(), service.CreateProductInput{
 		Name: "Apple", Price: 10, SalePrice: ptr(8.0),
 	})
 
 	require.NoError(t, err)
 	assert.Equal(t, int64(42), got.ID)
-	repo.AssertExpectations(t)
+	assert.Equal(t, 1, d.tx.Calls)
+	d.productRepo.AssertExpectations(t)
+	d.auditLogRepo.AssertExpectations(t)
 }
 
-func TestCreate_ValidationErrorDoesNotHitRepo(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	svc := service.NewProductService(repo, &mocks.Transactor{})
+func TestCreateProduct_UsesSystemActorWithoutRequestContext(t *testing.T) {
+	d := newDeps()
+	d.productRepo.On("CreateProduct", mock.Anything, mock.Anything).Return(nil).Once()
+	d.auditLogRepo.On("CreateAuditLog", mock.Anything, mock.MatchedBy(func(l *model.AuditLog) bool {
+		return l.Actor == service.SystemActor && l.RequestID == ""
+	})).Return(nil).Once()
 
-	_, err := svc.Create(context.Background(), service.CreateProductInput{Name: "", Price: 10})
+	_, err := d.svc.CreateProduct(context.Background(), service.CreateProductInput{Name: "A", Price: 1})
+
+	require.NoError(t, err)
+	d.auditLogRepo.AssertExpectations(t)
+}
+
+func TestCreateProduct_ValidationErrorDoesNotHitRepo(t *testing.T) {
+	d := newDeps()
+
+	_, err := d.svc.CreateProduct(requestCtx(), service.CreateProductInput{Name: "", Price: 10})
 
 	assert.Equal(t, apperror.CodeInvalidName, apperror.CodeOf(err))
-	repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
+	d.productRepo.AssertNotCalled(t, "CreateProduct", mock.Anything, mock.Anything)
+	d.auditLogRepo.AssertNotCalled(t, "CreateAuditLog", mock.Anything, mock.Anything)
 }
 
-func TestCreate_RepoError(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	svc := service.NewProductService(repo, &mocks.Transactor{})
+func TestCreateProduct_RepoErrorSkipsAudit(t *testing.T) {
+	d := newDeps()
 	dbErr := errors.New("db down")
-	repo.On("Create", mock.Anything, mock.Anything).Return(dbErr).Once()
+	d.productRepo.On("CreateProduct", mock.Anything, mock.Anything).Return(dbErr).Once()
 
-	_, err := svc.Create(context.Background(), service.CreateProductInput{Name: "A", Price: 1})
+	_, err := d.svc.CreateProduct(requestCtx(), service.CreateProductInput{Name: "A", Price: 1})
 
 	assert.ErrorIs(t, err, dbErr)
 	assert.Equal(t, apperror.CodeInternal, apperror.CodeOf(err))
+	d.auditLogRepo.AssertNotCalled(t, "CreateAuditLog", mock.Anything, mock.Anything)
 }
 
-// --- Patch ---
+func TestCreateProduct_AuditErrorFailsTheRequest(t *testing.T) {
+	d := newDeps()
+	auditErr := errors.New("audit insert failed")
+	d.productRepo.On("CreateProduct", mock.Anything, mock.Anything).Return(nil).Once()
+	d.auditLogRepo.On("CreateAuditLog", mock.Anything, mock.Anything).Return(auditErr).Once()
+
+	_, err := d.svc.CreateProduct(requestCtx(), service.CreateProductInput{Name: "A", Price: 1})
+
+	assert.ErrorIs(t, err, auditErr) // transaction is rolled back by the real Transactor
+}
+
+// --- PatchProductByID ---
 
 func existing() *model.Product {
 	return &model.Product{ID: 1, Name: "Apple", Description: ptr("fresh"), Price: 100, SalePrice: ptr(90.0)}
 }
 
-func TestPatch_OverwritesOnlyProvidedFields(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	tx := &mocks.Transactor{}
-	svc := service.NewProductService(repo, tx)
+func TestPatchProductByID_OverwritesOnlyProvidedFieldsAndAudits(t *testing.T) {
+	d := newDeps()
 
-	repo.On("GetByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
-	repo.On("Update", mock.Anything, &model.Product{
+	d.productRepo.On("GetProductByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
+	d.productRepo.On("UpdateProduct", mock.Anything, &model.Product{
 		ID: 1, Name: "Banana", Description: nil, Price: 100, SalePrice: ptr(90.0),
 	}).Return(nil).Once()
+	d.auditLogRepo.On("CreateAuditLog", mock.Anything, mock.MatchedBy(func(l *model.AuditLog) bool {
+		return l.Action == model.AuditActionProductUpdated && l.EntityID == 1 &&
+			string(l.BeforeData) == `{"id":1,"name":"Apple","description":"fresh","price":100,"sale_price":90}` &&
+			string(l.AfterData) == `{"id":1,"name":"Banana","description":null,"price":100,"sale_price":90}`
+	})).Return(nil).Once()
 
-	got, err := svc.Patch(context.Background(), 1, model.ProductPatch{
+	got, err := d.svc.PatchProductByID(requestCtx(), 1, model.ProductPatch{
 		Name:        optional.Of("Banana"),
 		Description: optional.Null[string](),
 	})
@@ -85,63 +144,82 @@ func TestPatch_OverwritesOnlyProvidedFields(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Banana", got.Name)
 	assert.Nil(t, got.Description)
-	assert.Equal(t, 1, tx.Calls)
-	repo.AssertExpectations(t)
+	assert.Equal(t, 1, d.tx.Calls)
+	d.productRepo.AssertExpectations(t)
+	d.auditLogRepo.AssertExpectations(t)
 }
 
-func TestPatch_EmptyPatchSkipsUpdate(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	svc := service.NewProductService(repo, &mocks.Transactor{})
-	repo.On("GetByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
+func TestPatchProductByID_NoOpPatchSkipsUpdateAndAudit(t *testing.T) {
+	for name, patch := range map[string]model.ProductPatch{
+		"empty body":     {},
+		"same values":    {Name: optional.Of("Apple"), Price: optional.Of(100.0)},
+		"same nullables": {Description: optional.Of("fresh"), SalePrice: optional.Of(90.0)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			d := newDeps()
+			d.productRepo.On("GetProductByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
 
-	got, err := svc.Patch(context.Background(), 1, model.ProductPatch{})
+			got, err := d.svc.PatchProductByID(requestCtx(), 1, patch)
 
-	require.NoError(t, err)
-	assert.Equal(t, existing(), got)
-	repo.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+			require.NoError(t, err)
+			assert.Equal(t, existing(), got)
+			d.productRepo.AssertNotCalled(t, "UpdateProduct", mock.Anything, mock.Anything)
+			d.auditLogRepo.AssertNotCalled(t, "CreateAuditLog", mock.Anything, mock.Anything)
+		})
+	}
 }
 
-func TestPatch_NotFound(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	svc := service.NewProductService(repo, &mocks.Transactor{})
-	repo.On("GetByIDForUpdate", mock.Anything, int64(99)).Return(nil, apperror.ErrProductNotFound).Once()
+func TestPatchProductByID_NotFound(t *testing.T) {
+	d := newDeps()
+	d.productRepo.On("GetProductByIDForUpdate", mock.Anything, int64(99)).Return(nil, apperror.ErrProductNotFound).Once()
 
-	_, err := svc.Patch(context.Background(), 99, model.ProductPatch{Name: optional.Of("X")})
+	_, err := d.svc.PatchProductByID(requestCtx(), 99, model.ProductPatch{Name: optional.Of("X")})
 
 	assert.ErrorIs(t, err, apperror.ErrProductNotFound)
-	repo.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+	d.productRepo.AssertNotCalled(t, "UpdateProduct", mock.Anything, mock.Anything)
+	d.auditLogRepo.AssertNotCalled(t, "CreateAuditLog", mock.Anything, mock.Anything)
 }
 
-func TestPatch_InvalidID(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	tx := &mocks.Transactor{}
-	svc := service.NewProductService(repo, tx)
+func TestPatchProductByID_InvalidID(t *testing.T) {
+	d := newDeps()
 
-	_, err := svc.Patch(context.Background(), 0, model.ProductPatch{})
+	_, err := d.svc.PatchProductByID(requestCtx(), 0, model.ProductPatch{})
 
 	assert.Equal(t, apperror.CodeInvalidProductID, apperror.CodeOf(err))
-	assert.Equal(t, 0, tx.Calls)
+	assert.Equal(t, 0, d.tx.Calls)
 }
 
-func TestPatch_ValidationErrorDoesNotUpdate(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	svc := service.NewProductService(repo, &mocks.Transactor{})
-	repo.On("GetByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
+func TestPatchProductByID_ValidationErrorDoesNotUpdate(t *testing.T) {
+	d := newDeps()
+	d.productRepo.On("GetProductByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
 
-	_, err := svc.Patch(context.Background(), 1, model.ProductPatch{SalePrice: optional.Of(1000.0)})
+	_, err := d.svc.PatchProductByID(requestCtx(), 1, model.ProductPatch{SalePrice: optional.Of(1000.0)})
 
 	assert.Equal(t, apperror.CodeInvalidSalePrice, apperror.CodeOf(err))
-	repo.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+	d.productRepo.AssertNotCalled(t, "UpdateProduct", mock.Anything, mock.Anything)
+	d.auditLogRepo.AssertNotCalled(t, "CreateAuditLog", mock.Anything, mock.Anything)
 }
 
-func TestPatch_UpdateError(t *testing.T) {
-	repo := new(mocks.ProductRepository)
-	svc := service.NewProductService(repo, &mocks.Transactor{})
+func TestPatchProductByID_UpdateError(t *testing.T) {
+	d := newDeps()
 	dbErr := errors.New("db down")
-	repo.On("GetByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
-	repo.On("Update", mock.Anything, mock.Anything).Return(dbErr).Once()
+	d.productRepo.On("GetProductByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
+	d.productRepo.On("UpdateProduct", mock.Anything, mock.Anything).Return(dbErr).Once()
 
-	_, err := svc.Patch(context.Background(), 1, model.ProductPatch{Price: optional.Of(200.0)})
+	_, err := d.svc.PatchProductByID(requestCtx(), 1, model.ProductPatch{Price: optional.Of(200.0)})
 
 	assert.ErrorIs(t, err, dbErr)
+	d.auditLogRepo.AssertNotCalled(t, "CreateAuditLog", mock.Anything, mock.Anything)
+}
+
+func TestPatchProductByID_AuditErrorFailsTheRequest(t *testing.T) {
+	d := newDeps()
+	auditErr := errors.New("audit insert failed")
+	d.productRepo.On("GetProductByIDForUpdate", mock.Anything, int64(1)).Return(existing(), nil).Once()
+	d.productRepo.On("UpdateProduct", mock.Anything, mock.Anything).Return(nil).Once()
+	d.auditLogRepo.On("CreateAuditLog", mock.Anything, mock.Anything).Return(auditErr).Once()
+
+	_, err := d.svc.PatchProductByID(requestCtx(), 1, model.ProductPatch{Price: optional.Of(200.0)})
+
+	assert.ErrorIs(t, err, auditErr)
 }

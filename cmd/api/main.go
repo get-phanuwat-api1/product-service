@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -10,9 +11,12 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/phanuwat/product-service/config"
 	"github.com/phanuwat/product-service/internal/container"
 	"github.com/phanuwat/product-service/pkg/database"
+	"github.com/phanuwat/product-service/pkg/logger"
 )
 
 // @title			Product Service API
@@ -20,12 +24,29 @@ import (
 // @description	Product REST API (handler -> service -> repository) with Gin and PostgreSQL.
 // @BasePath		/
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, "fatal:", err)
+		os.Exit(1)
+	}
+}
 
+func run() error {
 	cfg, err := config.Load()
 	if err != nil {
-		logger.Error("load config", "error", err)
-		os.Exit(1)
+		return err
+	}
+
+	log, err := logger.NewLogger(os.Stdout, logger.Options{
+		Level:   cfg.Log.Level,
+		Format:  cfg.Log.Format,
+		Service: cfg.App.Name,
+	})
+	if err != nil {
+		return err
+	}
+	slog.SetDefault(log)
+	if cfg.App.Env != "local" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -33,12 +54,11 @@ func main() {
 
 	pool, err := database.NewPostgresPool(ctx, cfg.Database.DSN())
 	if err != nil {
-		logger.Error("connect database", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("connect database: %w", err)
 	}
 	defer pool.Close()
 
-	c := container.New(pool, logger)
+	c := container.NewContainer(pool, log)
 
 	port := strconv.Itoa(cfg.Server.Port)
 	srv := &http.Server{
@@ -48,19 +68,26 @@ func main() {
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
+	serverErr := make(chan error, 1)
 	go func() {
-		logger.Info("server started", "addr", srv.Addr, "swagger", "http://localhost:"+port+"/api-docs")
+		log.Info("server started", "addr", srv.Addr, "swagger", "http://localhost:"+port+"/api-docs")
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server error", "error", err)
-			stop()
+			serverErr <- err
 		}
 	}()
 
-	<-ctx.Done()
-	logger.Info("shutting down")
+	select {
+	case err := <-serverErr:
+		return fmt.Errorf("http server: %w", err)
+	case <-ctx.Done():
+	}
+
+	log.Info("shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		logger.Error("graceful shutdown failed", "error", err)
+		return fmt.Errorf("graceful shutdown: %w", err)
 	}
+	log.Info("server stopped")
+	return nil
 }

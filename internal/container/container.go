@@ -16,23 +16,27 @@ import (
 
 // Container holds the wired application graph.
 type Container struct {
-	ProductRepository repository.ProductRepository
-	ProductService    service.ProductService
-	ProductHandler    *handler.ProductHandler
-	Router            *gin.Engine
+	ProductRepository  repository.ProductRepository
+	AuditLogRepository repository.AuditLogRepository
+	ProductService     service.ProductService
+	ProductHandler     *handler.ProductHandler
+	Router             *gin.Engine
 }
 
-// New wires all dependencies.
-func New(pool *pgxpool.Pool, logger *slog.Logger) *Container {
+// NewContainer wires all dependencies.
+func NewContainer(pool *pgxpool.Pool, logger *slog.Logger) *Container {
 	productRepo := repository.NewProductRepository(pool)
+	auditLogRepo := repository.NewAuditLogRepository(pool)
 	transactor := repository.NewTransactor(pool)
-	productSvc := service.NewProductService(productRepo, transactor)
-	productHandler := handler.NewProductHandler(productSvc, logger)
+
+	productSvc := service.NewProductService(productRepo, auditLogRepo, transactor, logger.With("layer", "service"))
+	productHandler := handler.NewProductHandler(productSvc, logger.With("layer", "handler"))
 
 	return &Container{
-		ProductRepository: productRepo,
-		ProductService:    productSvc,
-		ProductHandler:    productHandler,
-		Router:            router.New(productHandler),
+		ProductRepository:  productRepo,
+		AuditLogRepository: auditLogRepo,
+		ProductService:     productSvc,
+		ProductHandler:     productHandler,
+		Router:             router.NewRouter(logger.With("layer", "http"), productHandler),
 	}
 }

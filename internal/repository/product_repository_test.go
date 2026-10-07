@@ -41,16 +41,16 @@ func TestMain(m *testing.M) {
 func ptr[T any](v T) *T { return &v }
 
 func TestProductRepository_CreateAndGet(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 	repo := repository.NewProductRepository(pool)
 	ctx := context.Background()
 
 	p := &model.Product{Name: "Apple", Description: ptr("fresh"), Price: 10.5, SalePrice: ptr(9.25)}
-	require.NoError(t, repo.Create(ctx, p))
+	require.NoError(t, repo.CreateProduct(ctx, p))
 	assert.NotZero(t, p.ID)
 	assert.False(t, p.CreatedAt.IsZero())
 
-	got, err := repo.GetByIDForUpdate(ctx, p.ID)
+	got, err := repo.GetProductByIDForUpdate(ctx, p.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "Apple", got.Name)
 	assert.Equal(t, "fresh", *got.Description)
@@ -59,42 +59,42 @@ func TestProductRepository_CreateAndGet(t *testing.T) {
 }
 
 func TestProductRepository_CreateWithNulls(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 	repo := repository.NewProductRepository(pool)
 	ctx := context.Background()
 
 	p := &model.Product{Name: "Plain", Price: 1}
-	require.NoError(t, repo.Create(ctx, p))
+	require.NoError(t, repo.CreateProduct(ctx, p))
 
-	got, err := repo.GetByIDForUpdate(ctx, p.ID)
+	got, err := repo.GetProductByIDForUpdate(ctx, p.ID)
 	require.NoError(t, err)
 	assert.Nil(t, got.Description)
 	assert.Nil(t, got.SalePrice)
 }
 
 func TestProductRepository_GetNotFound(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 	repo := repository.NewProductRepository(pool)
 
-	_, err := repo.GetByIDForUpdate(context.Background(), 12345)
+	_, err := repo.GetProductByIDForUpdate(context.Background(), 12345)
 	assert.ErrorIs(t, err, apperror.ErrProductNotFound)
 }
 
 func TestProductRepository_Update(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 	repo := repository.NewProductRepository(pool)
 	ctx := context.Background()
 
 	p := &model.Product{Name: "Apple", Description: ptr("fresh"), Price: 10, SalePrice: ptr(9.0)}
-	require.NoError(t, repo.Create(ctx, p))
+	require.NoError(t, repo.CreateProduct(ctx, p))
 	createdUpdatedAt := p.UpdatedAt
 
 	p.Name = "Banana"
 	p.Description = nil
 	p.SalePrice = nil
-	require.NoError(t, repo.Update(ctx, p))
+	require.NoError(t, repo.UpdateProduct(ctx, p))
 
-	got, err := repo.GetByIDForUpdate(ctx, p.ID)
+	got, err := repo.GetProductByIDForUpdate(ctx, p.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "Banana", got.Name)
 	assert.Nil(t, got.Description)
@@ -104,47 +104,47 @@ func TestProductRepository_Update(t *testing.T) {
 }
 
 func TestProductRepository_UpdateNotFound(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 	repo := repository.NewProductRepository(pool)
 
-	err := repo.Update(context.Background(), &model.Product{ID: 999, Name: "X", Price: 1})
+	err := repo.UpdateProduct(context.Background(), &model.Product{ID: 999, Name: "X", Price: 1})
 	assert.ErrorIs(t, err, apperror.ErrProductNotFound)
 }
 
 func TestTransactor_CommitAndRollback(t *testing.T) {
-	testutil.TruncateProducts(t, pool)
+	testutil.TruncateTables(t, pool)
 	repo := repository.NewProductRepository(pool)
 	tx := repository.NewTransactor(pool)
 	ctx := context.Background()
 
 	p := &model.Product{Name: "Apple", Price: 10}
-	require.NoError(t, repo.Create(ctx, p))
+	require.NoError(t, repo.CreateProduct(ctx, p))
 
 	// rollback: change is discarded
 	boom := errors.New("boom")
 	err := tx.WithinTransaction(ctx, func(ctx context.Context) error {
-		got, err := repo.GetByIDForUpdate(ctx, p.ID)
+		got, err := repo.GetProductByIDForUpdate(ctx, p.ID)
 		require.NoError(t, err)
 		got.Name = "Rolled back"
-		require.NoError(t, repo.Update(ctx, got))
+		require.NoError(t, repo.UpdateProduct(ctx, got))
 		return boom
 	})
 	assert.ErrorIs(t, err, boom)
-	got, err := repo.GetByIDForUpdate(ctx, p.ID)
+	got, err := repo.GetProductByIDForUpdate(ctx, p.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "Apple", got.Name)
 
 	// commit: change is persisted
 	err = tx.WithinTransaction(ctx, func(ctx context.Context) error {
-		got, err := repo.GetByIDForUpdate(ctx, p.ID)
+		got, err := repo.GetProductByIDForUpdate(ctx, p.ID)
 		if err != nil {
 			return err
 		}
 		got.Name = "Committed"
-		return repo.Update(ctx, got)
+		return repo.UpdateProduct(ctx, got)
 	})
 	require.NoError(t, err)
-	got, err = repo.GetByIDForUpdate(ctx, p.ID)
+	got, err = repo.GetProductByIDForUpdate(ctx, p.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "Committed", got.Name)
 }
