@@ -1,4 +1,4 @@
-.PHONY: up down db run migrate-up migrate-down migrate-version migrate-create test test-unit test-repo test-component cover swag lint fuzz mocks
+.PHONY: up down db run migrate-up migrate-down migrate-version migrate-create test test-unit test-repo test-component cover swag lint fuzz mocks postman
 
 ## --- Run ---------------------------------------------------------------
 
@@ -52,6 +52,9 @@ cover:
 	go tool cover -func=coverage.out | tail -1
 
 ## --- Tools -------------------------------------------------------------
+
+postman:       ## run the Postman collection against a running service (needs Node.js)
+	npx -y newman@6 run postman/product-service.postman_collection.json -e postman/local.postman_environment.json
 
 mocks:         ## regenerate mocks from interfaces (.mockery.yml)
 	go run github.com/vektra/mockery/v3@v3.8.0

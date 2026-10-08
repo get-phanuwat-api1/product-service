@@ -229,6 +229,30 @@ Response `200`: `{"successful": true, "error_code": ""}`
 | `PRODUCT_NOT_FOUND`     | 404  | No product with this id                        |
 | `INTERNAL_SERVER_ERROR` | 500  | Unexpected error                               |
 
+### Postman
+
+[`postman/`](postman/) contains a ready-to-use collection and a local environment:
+
+1. In Postman, choose **Import**, then select both files in `postman/`.
+2. Select the **Product Service - Local** environment (`baseUrl = http://localhost:8080`).
+3. Start the service, then **Run collection**, or send requests one by one. **Create product (all fields)** saves `productId` for the PATCH requests.
+
+| Folder | Requests |
+|---|---|
+| Health check | `GET /health` |
+| Create Product - POST /product | all fields, required only, explicit nulls |
+| Create Product - errors | `INVALID_NAME`, `INVALID_PRICE`, `INVALID_SALE_PRICE`, `INVALID_REQUEST_BODY` |
+| Patch Product - PATCH /product/{id} | only name, price + sale_price, clear description, clear sale_price, empty body |
+| Patch Product - errors | `PRODUCT_NOT_FOUND`, `INVALID_PRODUCT_ID`, null name/price, sale_price above price |
+
+Every request has test scripts that check the status, `successful`, and `error_code`, and that `X-Request-ID` is echoed back (20 requests, 62 assertions). Each request also sends `X-User-ID: {{userId}}`, so changes appear in `audit_logs` with actor `postman`.
+
+You can run the same collection from the command line with [Newman](https://github.com/postmanlabs/newman):
+
+```bash
+make postman
+```
+
 ---
 
 ## Tests

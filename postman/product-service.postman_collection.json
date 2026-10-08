@@ -1,0 +1,1201 @@
+{
+  "info": {
+    "name": "Product Service",
+    "description": "REST API of product-service.\n\n1. Start the service: `docker compose up --build`\n2. Select the **Product Service - Local** environment\n3. Run the whole collection (Runner) or send requests one by one. **Create product (all fields)** stores `productId` for the PATCH requests.\n\nEvery request sends `X-Request-ID` (random) and `X-User-ID` (`{{userId}}`), which end up in the logs and in `audit_logs`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"status ok\", () => pm.expect(pm.response.json().status).to.eql(\"ok\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Request-ID",
+            "value": "{{$guid}}",
+            "description": "Correlation ID, echoed back and stored in audit_logs"
+          },
+          {
+            "key": "X-User-ID",
+            "value": "{{userId}}",
+            "description": "Actor recorded in audit_logs (default: anonymous)"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Liveness probe."
+      }
+    },
+    {
+      "name": "Create Product - POST /product",
+      "item": [
+        {
+          "name": "Create product (all fields)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"successful = true, error_code empty\", () => {",
+                  "    pm.expect(res.successful).to.eql(true);",
+                  "    pm.expect(res.error_code).to.eql(\"\");",
+                  "});",
+                  "pm.test(\"X-Request-ID echoed\", () => pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(pm.request.headers.get(\"X-Request-ID\")));",
+                  "pm.test(\"data echoes the product\", () => {",
+                  "    pm.expect(res.data.id).to.be.a(\"number\");",
+                  "    pm.expect(res.data.name).to.eql(\"iPhone 17\");",
+                  "    pm.expect(res.data.description).to.eql(\"Latest model\");",
+                  "    pm.expect(res.data.sale_price).to.eql(39900);",
+                  "    pm.expect(res.data.price).to.eql(42900);",
+                  "});",
+                  "pm.collectionVariables.set(\"productId\", res.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"iPhone 17\",\n  \"description\": \"Latest model\",\n  \"sale_price\": 39900,\n  \"price\": 42900\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            },
+            "description": "Creates a product and stores its id in the `productId` collection variable for the PATCH requests."
+          }
+        },
+        {
+          "name": "Create product (only required fields)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"successful = true, error_code empty\", () => {",
+                  "    pm.expect(res.successful).to.eql(true);",
+                  "    pm.expect(res.error_code).to.eql(\"\");",
+                  "});",
+                  "pm.test(\"X-Request-ID echoed\", () => pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(pm.request.headers.get(\"X-Request-ID\")));",
+                  "pm.test(\"nullable fields are null\", () => {",
+                  "    pm.expect(res.data.description).to.eql(null);",
+                  "    pm.expect(res.data.sale_price).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"USB-C cable\",\n  \"price\": 290\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            },
+            "description": "`description` and `sale_price` are nullable and may be omitted."
+          }
+        },
+        {
+          "name": "Create product (explicit nulls)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"successful = true, error_code empty\", () => {",
+                  "    pm.expect(res.successful).to.eql(true);",
+                  "    pm.expect(res.error_code).to.eql(\"\");",
+                  "});",
+                  "pm.test(\"X-Request-ID echoed\", () => pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(pm.request.headers.get(\"X-Request-ID\")));",
+                  "pm.test(\"nullable fields are null\", () => {",
+                  "    pm.expect(res.data.description).to.eql(null);",
+                  "    pm.expect(res.data.sale_price).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Case\",\n  \"description\": null,\n  \"sale_price\": null,\n  \"price\": 590\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Product - errors",
+      "item": [
+        {
+          "name": "Create → INVALID_NAME (missing name)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_NAME\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_NAME\");",
+                  "});",
+                  "pm.test(\"data is null\", () => pm.expect(res.data).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create → INVALID_NAME (blank name)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_NAME\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_NAME\");",
+                  "});",
+                  "pm.test(\"data is null\", () => pm.expect(res.data).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"   \",\n  \"price\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create → INVALID_PRICE (missing price)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_PRICE\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_PRICE\");",
+                  "});",
+                  "pm.test(\"data is null\", () => pm.expect(res.data).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"A\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create → INVALID_PRICE (negative price)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_PRICE\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_PRICE\");",
+                  "});",
+                  "pm.test(\"data is null\", () => pm.expect(res.data).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"A\",\n  \"price\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create → INVALID_SALE_PRICE (sale_price greater than price)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_SALE_PRICE\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_SALE_PRICE\");",
+                  "});",
+                  "pm.test(\"data is null\", () => pm.expect(res.data).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"A\",\n  \"price\": 10,\n  \"sale_price\": 11\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create → INVALID_REQUEST_BODY (wrong type)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_REQUEST_BODY\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_REQUEST_BODY\");",
+                  "});",
+                  "pm.test(\"data is null\", () => pm.expect(res.data).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"A\",\n  \"price\": \"10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patch Product - PATCH /product/{id}",
+      "item": [
+        {
+          "name": "Patch: only name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"successful = true, error_code empty\", () => {",
+                  "    pm.expect(res.successful).to.eql(true);",
+                  "    pm.expect(res.error_code).to.eql(\"\");",
+                  "});",
+                  "pm.test(\"X-Request-ID echoed\", () => pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(pm.request.headers.get(\"X-Request-ID\")));",
+                  "pm.test(\"PATCH response has no data key\", () => pm.expect(res).to.not.have.property(\"data\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"iPhone 17 Pro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "{{productId}}"
+              ]
+            },
+            "description": "Only `name` is overwritten; every other field keeps its value."
+          }
+        },
+        {
+          "name": "Patch: price and sale_price",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"successful = true, error_code empty\", () => {",
+                  "    pm.expect(res.successful).to.eql(true);",
+                  "    pm.expect(res.error_code).to.eql(\"\");",
+                  "});",
+                  "pm.test(\"X-Request-ID echoed\", () => pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(pm.request.headers.get(\"X-Request-ID\")));",
+                  "pm.test(\"PATCH response has no data key\", () => pm.expect(res).to.not.have.property(\"data\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 45900,\n  \"sale_price\": 41900\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "{{productId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch: clear description (null)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"successful = true, error_code empty\", () => {",
+                  "    pm.expect(res.successful).to.eql(true);",
+                  "    pm.expect(res.error_code).to.eql(\"\");",
+                  "});",
+                  "pm.test(\"X-Request-ID echoed\", () => pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(pm.request.headers.get(\"X-Request-ID\")));",
+                  "pm.test(\"PATCH response has no data key\", () => pm.expect(res).to.not.have.property(\"data\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "{{productId}}"
+              ]
+            },
+            "description": "Explicit `null` clears a nullable field."
+          }
+        },
+        {
+          "name": "Patch: clear sale_price (null)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"successful = true, error_code empty\", () => {",
+                  "    pm.expect(res.successful).to.eql(true);",
+                  "    pm.expect(res.error_code).to.eql(\"\");",
+                  "});",
+                  "pm.test(\"X-Request-ID echoed\", () => pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(pm.request.headers.get(\"X-Request-ID\")));",
+                  "pm.test(\"PATCH response has no data key\", () => pm.expect(res).to.not.have.property(\"data\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sale_price\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "{{productId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch: empty body (no change)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"successful = true, error_code empty\", () => {",
+                  "    pm.expect(res.successful).to.eql(true);",
+                  "    pm.expect(res.error_code).to.eql(\"\");",
+                  "});",
+                  "pm.test(\"X-Request-ID echoed\", () => pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(pm.request.headers.get(\"X-Request-ID\")));",
+                  "pm.test(\"PATCH response has no data key\", () => pm.expect(res).to.not.have.property(\"data\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "{{productId}}"
+              ]
+            },
+            "description": "Nothing is written and no audit log is recorded."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patch Product - errors",
+      "item": [
+        {
+          "name": "Patch → PRODUCT_NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = PRODUCT_NOT_FOUND\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"PRODUCT_NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"X\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "999999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch → INVALID_PRODUCT_ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_PRODUCT_ID\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_PRODUCT_ID\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"X\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "abc"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch → INVALID_NAME (name null)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_NAME\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_NAME\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "{{productId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch → INVALID_PRICE (price null)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_PRICE\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_PRICE\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "{{productId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch → INVALID_SALE_PRICE (above price)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "const res = pm.response.json();",
+                  "pm.test(\"error_code = INVALID_SALE_PRICE\", () => {",
+                  "    pm.expect(res.successful).to.eql(false);",
+                  "    pm.expect(res.error_code).to.eql(\"INVALID_SALE_PRICE\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}",
+                "description": "Correlation ID, echoed back and stored in audit_logs"
+              },
+              {
+                "key": "X-User-ID",
+                "value": "{{userId}}",
+                "description": "Actor recorded in audit_logs (default: anonymous)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sale_price\": 99999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/product/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "product",
+                "{{productId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "userId",
+      "value": "postman"
+    },
+    {
+      "key": "productId",
+      "value": ""
+    }
+  ]
+}
