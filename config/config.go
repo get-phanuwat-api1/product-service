@@ -49,6 +49,8 @@ type DatabaseConfig struct {
 	Name     string `mapstructure:"name"`
 	SSLMode  string `mapstructure:"sslmode"`
 	MaxConns int32  `mapstructure:"max_conns"`
+	// AutoMigrate applies pending migrations every time the API starts.
+	AutoMigrate bool `mapstructure:"auto_migrate"`
 }
 
 // DSN builds a PostgreSQL connection URL.

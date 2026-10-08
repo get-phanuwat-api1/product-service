@@ -22,6 +22,12 @@ import (
 // PostgreSQL container is started with testcontainers (Docker required).
 // The returned cleanup func must be called when done.
 func StartPostgres(ctx context.Context) (*pgxpool.Pool, func(), error) {
+	pool, _, cleanup, err := StartPostgresWithDSN(ctx)
+	return pool, cleanup, err
+}
+
+// StartPostgresWithDSN is like StartPostgres but also returns the connection string.
+func StartPostgresWithDSN(ctx context.Context) (*pgxpool.Pool, string, func(), error) {
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	var container *tcpostgres.PostgresContainer
 
@@ -38,12 +44,12 @@ func StartPostgres(ctx context.Context) (*pgxpool.Pool, func(), error) {
 			),
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, "", nil, err
 		}
 		dsn, err = container.ConnectionString(ctx, "sslmode=disable")
 		if err != nil {
 			_ = container.Terminate(ctx)
-			return nil, nil, err
+			return nil, "", nil, err
 		}
 	}
 
@@ -53,17 +59,17 @@ func StartPostgres(ctx context.Context) (*pgxpool.Pool, func(), error) {
 		}
 	}
 
-	if err := database.MigrateUp(migrations.FS, dsn); err != nil {
+	if _, err := database.MigrateUp(migrations.FS, dsn); err != nil {
 		terminate()
-		return nil, nil, err
+		return nil, "", nil, err
 	}
 	pool, err := database.NewPostgresPool(ctx, dsn)
 	if err != nil {
 		terminate()
-		return nil, nil, err
+		return nil, "", nil, err
 	}
 
-	return pool, func() { pool.Close(); terminate() }, nil
+	return pool, dsn, func() { pool.Close(); terminate() }, nil
 }
 
 // TruncateTables clears all application tables between tests.

@@ -2,7 +2,7 @@
 
 ## --- Run ---------------------------------------------------------------
 
-up:            ## start postgres + migrate + api with Docker Compose
+up:            ## start postgres + api (api auto-migrates on start)
 	docker compose up --build -d
 
 down:
@@ -11,7 +11,7 @@ down:
 db:            ## start only postgres (for `make run`)
 	docker compose up -d postgres
 
-run:           ## run the api locally (reads config/config.yaml)
+run:           ## run the api locally (reads config/config.yaml, auto-migrates on start)
 	go run ./cmd/api
 
 ## --- Migration ---------------------------------------------------------

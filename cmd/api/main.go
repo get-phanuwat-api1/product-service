@@ -15,6 +15,7 @@ import (
 
 	"github.com/get-phanuwat-api1/product-service/config"
 	"github.com/get-phanuwat-api1/product-service/internal/container"
+	"github.com/get-phanuwat-api1/product-service/migrations"
 	"github.com/get-phanuwat-api1/product-service/pkg/database"
 	"github.com/get-phanuwat-api1/product-service/pkg/logger"
 )
@@ -51,6 +52,15 @@ func run() error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if cfg.Database.AutoMigrate {
+		log.Info("running database migrations")
+		version, err := database.MigrateUp(migrations.FS, cfg.Database.DSN())
+		if err != nil {
+			return fmt.Errorf("auto-migrate: %w", err)
+		}
+		log.Info("database schema is up to date", "version", version)
+	}
 
 	pool, err := database.NewPostgresPool(ctx, cfg.Database.DSN())
 	if err != nil {

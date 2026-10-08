@@ -20,6 +20,7 @@ func TestLoadFile_DefaultYAML(t *testing.T) {
 	assert.Equal(t, 10*time.Second, cfg.Server.ReadTimeout)
 	assert.Equal(t, "localhost", cfg.Database.Host)
 	assert.Equal(t, "info", cfg.Log.Level)
+	assert.True(t, cfg.Database.AutoMigrate)
 	assert.Equal(t, "json", cfg.Log.Format)
 	assert.Equal(t,
 		"postgres://postgres:postgres@localhost:5432/product?pool_max_conns=10&sslmode=disable",
@@ -31,6 +32,7 @@ func TestLoadFile_EnvOverrides(t *testing.T) {
 	t.Setenv("SERVER_PORT", "9090")
 	t.Setenv("DATABASE_PASSWORD", "p@ss/word")
 	t.Setenv("LOG_LEVEL", "debug")
+	t.Setenv("DATABASE_AUTO_MIGRATE", "false")
 
 	cfg, err := config.LoadFile("config.yaml")
 	require.NoError(t, err)
@@ -38,6 +40,7 @@ func TestLoadFile_EnvOverrides(t *testing.T) {
 	assert.Equal(t, "db.internal", cfg.Database.Host)
 	assert.Equal(t, 9090, cfg.Server.Port)
 	assert.Equal(t, "debug", cfg.Log.Level)
+	assert.False(t, cfg.Database.AutoMigrate)
 	assert.Contains(t, cfg.Database.DSN(), "postgres:p%40ss%2Fword@db.internal:5432")
 }
 

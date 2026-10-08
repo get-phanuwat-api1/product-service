@@ -15,16 +15,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  # Runs pending migrations once, then exits.
-  migrate:
-    build: .
-    entrypoint: ["/app/migrate", "up"]
-    environment:
-      DATABASE_HOST: postgres
-    depends_on:
-      postgres:
-        condition: service_healthy
-
+  # The API applies pending migrations itself on every start (database.auto_migrate: true).
   api:
     build: .
     environment:
@@ -32,9 +23,10 @@ services:
       DATABASE_HOST: postgres # overrides database.host in config/config.yaml
     ports:
       - "8080:8080"
+    restart: on-failure
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
 
 volumes:
   pgdata:

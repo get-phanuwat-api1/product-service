@@ -53,14 +53,26 @@ func (mg *Migrator) Close() error {
 	return errors.Join(srcErr, dbErr)
 }
 
-// MigrateUp is a convenience helper that applies all pending migrations.
-func MigrateUp(fsys fs.FS, dsn string) error {
+// MigrateUp applies all pending migrations and returns the resulting schema version.
+// It is safe to call from several instances at once: golang-migrate holds a
+// PostgreSQL advisory lock while migrating, so only one instance applies changes.
+func MigrateUp(fsys fs.FS, dsn string) (uint, error) {
 	mg, err := NewMigrator(fsys, dsn)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer mg.Close()
-	return mg.Up()
+	if err := mg.Up(); err != nil {
+		return 0, err
+	}
+	version, dirty, err := mg.Version()
+	if err != nil {
+		return 0, err
+	}
+	if dirty {
+		return version, fmt.Errorf("database schema is dirty at version %d: fix it, then run `migrate force %d`", version, version)
+	}
+	return version, nil
 }
 
 func ignoreNoChange(err error) error {

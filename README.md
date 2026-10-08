@@ -19,7 +19,7 @@ A Product REST API in Go with a layered architecture (**handler → service → 
 docker compose up --build
 ```
 
-This starts PostgreSQL, runs migrations (`migrate up`), and then starts the API.
+This starts PostgreSQL and then the API. **The API applies pending migrations automatically on every start**, so you do not need a separate migrate step.
 
 - API: http://localhost:8080
 - Swagger UI: http://localhost:8080/api-docs
@@ -27,9 +27,8 @@ This starts PostgreSQL, runs migrations (`migrate up`), and then starts the API.
 ### Option 2: Run locally with Go (Go 1.25+)
 
 ```bash
-make db           # start PostgreSQL in Docker (port 5432)
-make migrate-up   # apply migrations
-make run          # start the API
+make db    # start PostgreSQL in Docker (port 5432)
+make run   # start the API (auto-migrates first)
 ```
 
 ---
@@ -97,6 +96,7 @@ Defaults live in [`config/config.yaml`](config/config.yaml). **Any environment v
 | `database.user`     | `DATABASE_USER`     | `postgres`  |
 | `database.password` | `DATABASE_PASSWORD` | `postgres`  |
 | `database.name`     | `DATABASE_NAME`     | `product`   |
+| `database.auto_migrate` | `DATABASE_AUTO_MIGRATE` | `true` |
 | `log.level`         | `LOG_LEVEL`         | `info`      |
 | `log.format`        | `LOG_FORMAT`        | `json`      |
 
@@ -143,6 +143,23 @@ FROM audit_logs WHERE entity_type = 'product' AND entity_id = 1 ORDER BY id;
 ## Migration
 
 The project uses [golang-migrate](https://github.com/golang-migrate/migrate). Each migration is a pair of `{version}_{name}.up.sql` / `.down.sql` files, and the applied version is stored in the `schema_migrations` table.
+
+### Auto-migrate on startup
+
+With `database.auto_migrate: true` (the default), the API runs `migrate up` every time it starts, before it opens the HTTP port:
+
+```
+INFO running database migrations
+INFO database schema is up to date version=2
+INFO server started addr=:8080
+```
+
+- **Idempotent:** if nothing is pending, startup simply continues.
+- **Safe with multiple instances:** golang-migrate holds a PostgreSQL advisory lock, so only one instance applies the changes and the others wait. This is covered by `TestMigrateUp_ConcurrentStartsAreSafe`.
+- **Fails fast:** if a migration fails, or the schema is left dirty, the API exits instead of serving on a half-migrated schema.
+- **Turning it off:** set `DATABASE_AUTO_MIGRATE=false`, for example in production when migrations run as a separate deploy step. In that case, use the CLI below.
+
+### Manual CLI
 
 ```bash
 make migrate-up                          # apply all pending migrations

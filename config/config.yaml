@@ -23,3 +23,4 @@ database:
   name: product
   sslmode: disable
   max_conns: 10
+  auto_migrate: true # run `migrate up` automatically on every API start
