@@ -2,5 +2,9 @@
 coverage.out
 *.test
 .idea/
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/extensions.json
 .DS_Store

@@ -27,9 +27,23 @@ This starts PostgreSQL and then the API. **The API applies pending migrations au
 ### Option 2: Run locally with Go (Go 1.25+)
 
 ```bash
-make db    # start PostgreSQL in Docker (port 5432)
-make run   # start the API (auto-migrates first)
+make run   # starts PostgreSQL in Docker if needed, then the API (auto-migrates first)
 ```
+
+### Option 3: Debug in VS Code
+
+Open the `product-service` folder in VS Code, install the recommended **Go** extension, then go to **Run and Debug** (F5):
+
+| Configuration | What it does |
+|---|---|
+| **API: debug** | Starts PostgreSQL (and stops the dockerized API to free port 8080), then runs the API under the debugger. Set breakpoints in handler, service, or repository and call the API from Swagger or curl. |
+| Migrate: version | Debugs the migration CLI |
+| Test: current package | Debugs the tests of the open file's package |
+| Test: selected function | Select a `TestXxx` name, then run it |
+| Test: component (E2E within service) | Debugs the component tests (needs Docker) |
+| Attach: running process | Attaches to an already running Go process |
+
+You can also use the **debug test** link that the Go extension shows above each `func TestXxx`.
 
 ---
 
