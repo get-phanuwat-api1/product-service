@@ -59,12 +59,13 @@ func StartPostgresWithDSN(ctx context.Context) (*pgxpool.Pool, string, func(), e
 		}
 	}
 
-	if _, err := database.MigrateUp(migrations.FS, dsn); err != nil {
+	pool, err := database.NewPostgresPool(ctx, dsn)
+	if err != nil {
 		terminate()
 		return nil, "", nil, err
 	}
-	pool, err := database.NewPostgresPool(ctx, dsn)
-	if err != nil {
+	if _, err := database.MigrateUp(ctx, pool, migrations.FS); err != nil {
+		pool.Close()
 		terminate()
 		return nil, "", nil, err
 	}

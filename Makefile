@@ -1,4 +1,4 @@
-.PHONY: up down db run migrate-up migrate-down migrate-version migrate-create test test-unit test-repo test-component cover swag lint fuzz mocks postman
+.PHONY: up down db run migrate-up migrate-down migrate-status migrate-create test test-unit test-repo test-component cover swag lint fuzz mocks postman
 
 ## --- Run ---------------------------------------------------------------
 
@@ -22,8 +22,8 @@ migrate-up:
 migrate-down:  ## roll back N steps: make migrate-down N=1
 	go run ./cmd/migrate down $(or $(N),1)
 
-migrate-version:
-	go run ./cmd/migrate version
+migrate-status: ## list applied + pending migrations (schema_migrations history)
+	go run ./cmd/migrate status
 
 migrate-create: ## make migrate-create NAME=add_sku_to_products
 	go run ./cmd/migrate create $(NAME)

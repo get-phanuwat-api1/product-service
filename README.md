@@ -53,11 +53,11 @@ You can also use the **debug test** link that the Go extension shows above each 
 product-service/
 ├── cmd/
 │   ├── api/main.go                  # API entrypoint: load config → DB → container → HTTP server
-│   └── migrate/main.go              # migration CLI: up / down / version / force / create
+│   └── migrate/main.go              # migration CLI: up / down / status / create
 ├── config/
 │   ├── config.yaml                  # default config (local)
 │   └── config.go                    # load YAML + env override (Viper)
-├── migrations/                      # SQL migrations (golang-migrate format, embedded in binary)
+├── migrations/                      # SQL migrations ({version}_{name}.up/down.sql, embedded in binary)
 │   ├── 000001_create_products_table.{up,down}.sql
 │   └── 000002_create_audit_logs_table.{up,down}.sql
 ├── internal/
@@ -156,21 +156,40 @@ FROM audit_logs WHERE entity_type = 'product' AND entity_id = 1 ORDER BY id;
 
 ## Migration
 
-The project uses [golang-migrate](https://github.com/golang-migrate/migrate). Each migration is a pair of `{version}_{name}.up.sql` / `.down.sql` files, and the applied version is stored in the `schema_migrations` table.
+Migrations are plain SQL files in [`migrations/`](migrations/), run by the in-house migrator in [`pkg/database`](pkg/database/migrator.go):
+
+```
+000001_create_products_table.up.sql     ← required
+000001_create_products_table.down.sql   ← used by `migrate down`
+```
+
+### `schema_migrations`: one row per migration
+
+| version | description | checksum | applied_at | execution_ms |
+|---|---|---|---|---|
+| 1 | create products table | 63c5d4… | 2026-10-08 15:39:27 | 12 |
+| 2 | create audit logs table | 014be9… | 2026-10-08 15:39:27 | 8 |
+
+- **`description`** comes from the file name (`create_products_table` becomes `create products table`).
+- **One transaction per migration:** each migration runs together with its history row, so a failing migration leaves neither half-applied DDL nor a "dirty" state.
+- **`checksum` is a sha256 of the `.up.sql` file.** If a migration is edited, or its file is deleted, after it was applied, the migrator refuses to run. Always add a new migration instead.
+- **Runs only what is pending:** every start compares the files with `schema_migrations` and applies only the missing versions, in order.
+- **PostgreSQL advisory lock:** held while migrating, so several instances starting at once never apply the same migration twice (`TestMigrator_ConcurrentUpIsSafe`).
+- **Legacy conversion:** a database that still has the old golang-migrate table (`version`, `dirty`) is converted automatically. Its existing data is kept, and the converted rows show `execution_ms = 0`.
 
 ### Auto-migrate on startup
 
-With `database.auto_migrate: true` (the default), the API runs `migrate up` every time it starts, before it opens the HTTP port:
+With `database.auto_migrate: true` (the default), the API applies pending migrations every time it starts, before it opens the HTTP port:
 
 ```
 INFO running database migrations
-INFO database schema is up to date version=2
+INFO migration applied version=1 description="create products table"
+INFO migration applied version=2 description="create audit logs table"
+INFO database schema is up to date applied=2
 INFO server started addr=:8080
 ```
 
-- **Idempotent:** if nothing is pending, startup simply continues.
-- **Safe with multiple instances:** golang-migrate holds a PostgreSQL advisory lock, so only one instance applies the changes and the others wait. This is covered by `TestMigrateUp_ConcurrentStartsAreSafe`.
-- **Fails fast:** if a migration fails, or the schema is left dirty, the API exits instead of serving on a half-migrated schema.
+- **Fails fast:** if a migration fails or a checksum does not match, the API exits instead of serving on a wrong schema.
 - **Turning it off:** set `DATABASE_AUTO_MIGRATE=false`, for example in production when migrations run as a separate deploy step. In that case, use the CLI below.
 
 ### Manual CLI
@@ -178,7 +197,7 @@ INFO server started addr=:8080
 ```bash
 make migrate-up                          # apply all pending migrations
 make migrate-down N=1                    # roll back 1 step
-make migrate-version                     # show current version
+make migrate-status                      # list applied + pending migrations
 make migrate-create NAME=add_sku_column  # create a new up/down file pair
 ```
 

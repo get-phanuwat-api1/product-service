@@ -1,35 +1,38 @@
 // Command migrate manages database schema migrations.
 //
 //	go run ./cmd/migrate up               apply all pending migrations
-//	go run ./cmd/migrate down [N]         roll back N migrations (default 1)
-//	go run ./cmd/migrate version          print current version
-//	go run ./cmd/migrate force V          set version V (fix dirty state)
+//	go run ./cmd/migrate down [N]         roll back the latest N migrations (default 1)
+//	go run ./cmd/migrate status           show applied and pending migrations
 //	go run ./cmd/migrate create NAME      create new up/down files in ./migrations
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/get-phanuwat-api1/product-service/config"
 	"github.com/get-phanuwat-api1/product-service/migrations"
 	"github.com/get-phanuwat-api1/product-service/pkg/database"
 )
 
+const usage = "usage: migrate <up | down [N] | status | create NAME>"
+
 func main() {
-	if err := run(os.Args[1:]); err != nil {
+	if err := run(context.Background(), os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "migrate:", err)
 		os.Exit(1)
 	}
 }
 
-func run(args []string) error {
+func run(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: migrate <up|down [N]|version|force V|create NAME>")
+		return fmt.Errorf(usage)
 	}
 	cmd, rest := args[0], args[1:]
 
@@ -44,16 +47,28 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	mg, err := database.NewMigrator(migrations.FS, cfg.Database.DSN())
+	pool, err := database.NewPostgresPool(ctx, cfg.Database.DSN())
 	if err != nil {
 		return err
 	}
-	defer mg.Close()
+	defer pool.Close()
+
+	mg, err := database.NewMigrator(pool, migrations.FS)
+	if err != nil {
+		return err
+	}
 
 	switch cmd {
 	case "up":
-		if err := mg.Up(); err != nil {
+		applied, err := mg.Up(ctx)
+		if err != nil {
 			return err
+		}
+		if len(applied) == 0 {
+			fmt.Println("no pending migrations")
+		}
+		for _, m := range applied {
+			fmt.Printf("applied  %06d  %s\n", m.Version, m.Description)
 		}
 	case "down":
 		steps := 1
@@ -62,38 +77,52 @@ func run(args []string) error {
 				return fmt.Errorf("N must be a positive integer")
 			}
 		}
-		if err := mg.Down(steps); err != nil {
-			return err
-		}
-	case "force":
-		if len(rest) != 1 {
-			return fmt.Errorf("usage: migrate force V")
-		}
-		v, err := strconv.Atoi(rest[0])
+		reverted, err := mg.Down(ctx, steps)
 		if err != nil {
-			return fmt.Errorf("V must be an integer")
-		}
-		if err := mg.Force(v); err != nil {
 			return err
 		}
-	case "version":
+		if len(reverted) == 0 {
+			fmt.Println("nothing to roll back")
+		}
+		for _, m := range reverted {
+			fmt.Printf("reverted %06d  %s\n", m.Version, m.Description)
+		}
+	case "status":
 	default:
-		return fmt.Errorf("unknown command %q", cmd)
+		return fmt.Errorf("unknown command %q\n%s", cmd, usage)
 	}
+	return printStatus(ctx, mg)
+}
 
-	v, dirty, err := mg.Version()
+func printStatus(ctx context.Context, mg *database.Migrator) error {
+	history, err := mg.History(ctx)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s done. current version: %d (dirty: %t)\n", cmd, v, dirty)
-	return nil
+	pending, err := mg.Pending(ctx)
+	if err != nil {
+		return err
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "\nVERSION\tDESCRIPTION\tSTATUS\tAPPLIED AT\tTIME")
+	for _, h := range history {
+		fmt.Fprintf(w, "%06d\t%s\tapplied\t%s\t%dms\n", h.Version, h.Description, h.AppliedAt.Local().Format("2006-01-02 15:04:05"), h.ExecutionMs)
+	}
+	for _, p := range pending {
+		fmt.Fprintf(w, "%06d\t%s\tpending\t-\t-\n", p.Version, p.Description)
+	}
+	return w.Flush()
 }
 
 var versionPrefix = regexp.MustCompile(`^(\d+)_`)
 
 // create writes the next sequential {version}_{name}.up.sql / .down.sql pair.
 func create(dir, name string) error {
-	name = strings.ToLower(regexp.MustCompile(`[^a-zA-Z0-9]+`).ReplaceAllString(name, "_"))
+	name = strings.Trim(strings.ToLower(regexp.MustCompile(`[^a-zA-Z0-9]+`).ReplaceAllString(name, "_")), "_")
+	if name == "" {
+		return fmt.Errorf("NAME must contain letters or digits")
+	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
@@ -106,9 +135,9 @@ func create(dir, name string) error {
 			}
 		}
 	}
-	for _, dirn := range []string{"up", "down"} {
-		path := filepath.Join(dir, fmt.Sprintf("%06d_%s.%s.sql", next, name, dirn))
-		if err := os.WriteFile(path, []byte("-- "+dirn+" migration\n"), 0o644); err != nil {
+	for _, direction := range []string{"up", "down"} {
+		path := filepath.Join(dir, fmt.Sprintf("%06d_%s.%s.sql", next, name, direction))
+		if err := os.WriteFile(path, []byte("-- "+direction+" migration\n"), 0o644); err != nil {
 			return err
 		}
 		fmt.Println("created", path)

@@ -53,20 +53,23 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if cfg.Database.AutoMigrate {
-		log.Info("running database migrations")
-		version, err := database.MigrateUp(migrations.FS, cfg.Database.DSN())
-		if err != nil {
-			return fmt.Errorf("auto-migrate: %w", err)
-		}
-		log.Info("database schema is up to date", "version", version)
-	}
-
 	pool, err := database.NewPostgresPool(ctx, cfg.Database.DSN())
 	if err != nil {
 		return fmt.Errorf("connect database: %w", err)
 	}
 	defer pool.Close()
+
+	if cfg.Database.AutoMigrate {
+		log.Info("running database migrations")
+		applied, err := database.MigrateUp(ctx, pool, migrations.FS)
+		if err != nil {
+			return fmt.Errorf("auto-migrate: %w", err)
+		}
+		for _, m := range applied {
+			log.Info("migration applied", "version", m.Version, "description", m.Description)
+		}
+		log.Info("database schema is up to date", "applied", len(applied))
+	}
 
 	c := container.NewContainer(pool, log)
 
