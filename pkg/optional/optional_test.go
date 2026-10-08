@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/phanuwat/product-service/pkg/optional"
+	"github.com/get-phanuwat-api1/product-service/pkg/optional"
 )
 
 type payload struct {

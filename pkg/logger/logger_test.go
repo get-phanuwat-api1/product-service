@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/phanuwat/product-service/pkg/logger"
-	"github.com/phanuwat/product-service/pkg/requestctx"
+	"github.com/get-phanuwat-api1/product-service/pkg/logger"
+	"github.com/get-phanuwat-api1/product-service/pkg/requestctx"
 )
 
 func TestNewLogger_AddsContextAttributes(t *testing.T) {

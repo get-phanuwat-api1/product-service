@@ -13,10 +13,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/phanuwat/product-service/config"
-	"github.com/phanuwat/product-service/internal/container"
-	"github.com/phanuwat/product-service/pkg/database"
-	"github.com/phanuwat/product-service/pkg/logger"
+	"github.com/get-phanuwat-api1/product-service/config"
+	"github.com/get-phanuwat-api1/product-service/internal/container"
+	"github.com/get-phanuwat-api1/product-service/pkg/database"
+	"github.com/get-phanuwat-api1/product-service/pkg/logger"
 )
 
 // @title			Product Service API

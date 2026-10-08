@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/phanuwat/product-service/internal/apperror"
-	"github.com/phanuwat/product-service/internal/handler"
-	"github.com/phanuwat/product-service/internal/mocks"
-	"github.com/phanuwat/product-service/internal/model"
-	"github.com/phanuwat/product-service/internal/service"
-	"github.com/phanuwat/product-service/pkg/logger"
-	"github.com/phanuwat/product-service/pkg/optional"
+	"github.com/get-phanuwat-api1/product-service/internal/apperror"
+	"github.com/get-phanuwat-api1/product-service/internal/handler"
+	"github.com/get-phanuwat-api1/product-service/internal/mocks"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/service"
+	"github.com/get-phanuwat-api1/product-service/pkg/logger"
+	"github.com/get-phanuwat-api1/product-service/pkg/optional"
 )
 
 func TestMain(m *testing.M) {

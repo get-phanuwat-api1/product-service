@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/phanuwat/product-service/internal/apperror"
-	"github.com/phanuwat/product-service/internal/model"
-	"github.com/phanuwat/product-service/internal/repository"
-	"github.com/phanuwat/product-service/test/testutil"
+	"github.com/get-phanuwat-api1/product-service/internal/apperror"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/repository"
+	"github.com/get-phanuwat-api1/product-service/test/testutil"
 )
 
 var pool *pgxpool.Pool

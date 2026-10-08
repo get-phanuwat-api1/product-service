@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/phanuwat/product-service/pkg/requestctx"
+	"github.com/get-phanuwat-api1/product-service/pkg/requestctx"
 )
 
 const (

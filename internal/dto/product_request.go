@@ -2,8 +2,8 @@
 package dto
 
 import (
-	"github.com/phanuwat/product-service/internal/model"
-	"github.com/phanuwat/product-service/pkg/optional"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/pkg/optional"
 )
 
 // CreateProductRequest is the body of POST /product.

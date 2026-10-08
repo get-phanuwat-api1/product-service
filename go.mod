@@ -1,4 +1,4 @@
-module github.com/phanuwat/product-service
+module github.com/get-phanuwat-api1/product-service
 
 go 1.25.11
 

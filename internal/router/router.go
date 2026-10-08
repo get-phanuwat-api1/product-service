@@ -9,9 +9,9 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	_ "github.com/phanuwat/product-service/docs" // generated swagger spec
-	"github.com/phanuwat/product-service/internal/handler"
-	"github.com/phanuwat/product-service/internal/middleware"
+	_ "github.com/get-phanuwat-api1/product-service/docs" // generated swagger spec
+	"github.com/get-phanuwat-api1/product-service/internal/handler"
+	"github.com/get-phanuwat-api1/product-service/internal/middleware"
 )
 
 // NewRouter builds the gin engine with middleware and all routes registered.

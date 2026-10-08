@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/phanuwat/product-service/pkg/optional"
+	"github.com/get-phanuwat-api1/product-service/pkg/optional"
 )
 
 // FuzzField_MatchesPointerDecoding checks that, for any JSON payload, Field[T] decodes exactly

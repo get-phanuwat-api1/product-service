@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/phanuwat/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
 )
 
 // AuditLogRepository persists audit records. Calls made with a transactional ctx

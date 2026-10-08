@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/phanuwat/product-service/internal/apperror"
-	"github.com/phanuwat/product-service/internal/model"
-	"github.com/phanuwat/product-service/internal/repository"
-	"github.com/phanuwat/product-service/pkg/requestctx"
+	"github.com/get-phanuwat-api1/product-service/internal/apperror"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/repository"
+	"github.com/get-phanuwat-api1/product-service/pkg/requestctx"
 )
 
 // SystemActor is recorded in audit logs when no actor is present in the context.

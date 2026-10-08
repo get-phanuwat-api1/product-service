@@ -9,7 +9,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/phanuwat/product-service/pkg/requestctx"
+	"github.com/get-phanuwat-api1/product-service/pkg/requestctx"
 )
 
 // Options configures the logger.

@@ -3,8 +3,8 @@ package model_test
 import (
 	"testing"
 
-	"github.com/phanuwat/product-service/internal/model"
-	"github.com/phanuwat/product-service/pkg/optional"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/pkg/optional"
 )
 
 func field[T any](set, null bool, v T) optional.Field[T] {

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/phanuwat/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
 )
 
 func TestProductSnapshot_Equal(t *testing.T) {

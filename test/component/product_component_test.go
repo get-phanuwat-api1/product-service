@@ -19,9 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/phanuwat/product-service/internal/container"
-	"github.com/phanuwat/product-service/pkg/logger"
-	"github.com/phanuwat/product-service/test/testutil"
+	"github.com/get-phanuwat-api1/product-service/internal/container"
+	"github.com/get-phanuwat-api1/product-service/pkg/logger"
+	"github.com/get-phanuwat-api1/product-service/test/testutil"
 )
 
 var (

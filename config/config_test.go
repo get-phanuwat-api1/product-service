@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/phanuwat/product-service/config"
+	"github.com/get-phanuwat-api1/product-service/config"
 )
 
 func TestLoadFile_DefaultYAML(t *testing.T) {

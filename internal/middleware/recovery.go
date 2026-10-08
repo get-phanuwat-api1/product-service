@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/phanuwat/product-service/internal/apperror"
+	"github.com/get-phanuwat-api1/product-service/internal/apperror"
 )
 
 // Recovery turns panics into a logged error and a 500 response in the API's standard shape.

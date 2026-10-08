@@ -9,10 +9,10 @@ pkgname: mocks
 structname: "{{.InterfaceName}}"
 filename: "{{.InterfaceName | snakecase}}.go"
 packages:
-  github.com/phanuwat/product-service/internal/repository:
+  github.com/get-phanuwat-api1/product-service/internal/repository:
     interfaces:
       ProductRepository: {}
       AuditLogRepository: {}
-  github.com/phanuwat/product-service/internal/service:
+  github.com/get-phanuwat-api1/product-service/internal/service:
     interfaces:
       ProductService: {}

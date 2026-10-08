@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/phanuwat/product-service/internal/apperror"
+	"github.com/get-phanuwat-api1/product-service/internal/apperror"
 )
 
 func TestErrorIs(t *testing.T) {

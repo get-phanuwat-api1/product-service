@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/phanuwat/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
 )
 
 // ProductData is the product representation returned in responses.

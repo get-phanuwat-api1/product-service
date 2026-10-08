@@ -15,9 +15,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/phanuwat/product-service/config"
-	"github.com/phanuwat/product-service/migrations"
-	"github.com/phanuwat/product-service/pkg/database"
+	"github.com/get-phanuwat-api1/product-service/config"
+	"github.com/get-phanuwat-api1/product-service/migrations"
+	"github.com/get-phanuwat-api1/product-service/pkg/database"
 )
 
 func main() {

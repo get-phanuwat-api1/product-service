@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/phanuwat/product-service/internal/apperror"
-	"github.com/phanuwat/product-service/internal/mocks"
-	"github.com/phanuwat/product-service/internal/model"
-	"github.com/phanuwat/product-service/internal/service"
-	"github.com/phanuwat/product-service/pkg/logger"
-	"github.com/phanuwat/product-service/pkg/optional"
-	"github.com/phanuwat/product-service/pkg/requestctx"
+	"github.com/get-phanuwat-api1/product-service/internal/apperror"
+	"github.com/get-phanuwat-api1/product-service/internal/mocks"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/service"
+	"github.com/get-phanuwat-api1/product-service/pkg/logger"
+	"github.com/get-phanuwat-api1/product-service/pkg/optional"
+	"github.com/get-phanuwat-api1/product-service/pkg/requestctx"
 )
 
 func ptr[T any](v T) *T { return &v }

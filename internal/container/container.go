@@ -8,10 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/phanuwat/product-service/internal/handler"
-	"github.com/phanuwat/product-service/internal/repository"
-	"github.com/phanuwat/product-service/internal/router"
-	"github.com/phanuwat/product-service/internal/service"
+	"github.com/get-phanuwat-api1/product-service/internal/handler"
+	"github.com/get-phanuwat-api1/product-service/internal/repository"
+	"github.com/get-phanuwat-api1/product-service/internal/router"
+	"github.com/get-phanuwat-api1/product-service/internal/service"
 )
 
 // Container holds the wired application graph.

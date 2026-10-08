@@ -12,8 +12,8 @@ import (
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/phanuwat/product-service/migrations"
-	"github.com/phanuwat/product-service/pkg/database"
+	"github.com/get-phanuwat-api1/product-service/migrations"
+	"github.com/get-phanuwat-api1/product-service/pkg/database"
 )
 
 // StartPostgres returns a migrated pgx pool for tests.

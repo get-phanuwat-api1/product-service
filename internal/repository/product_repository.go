@@ -9,8 +9,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/phanuwat/product-service/internal/apperror"
-	"github.com/phanuwat/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/apperror"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
 )
 
 // ProductRepository persists products.

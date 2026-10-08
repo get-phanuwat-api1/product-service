@@ -12,10 +12,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/phanuwat/product-service/internal/apperror"
-	"github.com/phanuwat/product-service/internal/dto"
-	"github.com/phanuwat/product-service/internal/middleware"
-	"github.com/phanuwat/product-service/internal/service"
+	"github.com/get-phanuwat-api1/product-service/internal/apperror"
+	"github.com/get-phanuwat-api1/product-service/internal/dto"
+	"github.com/get-phanuwat-api1/product-service/internal/middleware"
+	"github.com/get-phanuwat-api1/product-service/internal/service"
 )
 
 // ProductHandler exposes product operations over HTTP.

@@ -7,7 +7,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/phanuwat/product-service/internal/model"
+	"github.com/get-phanuwat-api1/product-service/internal/model"
 	mock "github.com/stretchr/testify/mock"
 )
 
