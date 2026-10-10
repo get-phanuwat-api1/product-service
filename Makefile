@@ -1,4 +1,4 @@
-.PHONY: up down db run migrate-up migrate-down migrate-status migrate-create test test-unit test-repo test-component cover swag lint fuzz mocks postman
+.PHONY: up down db run migrate-up migrate-down migrate-status migrate-create test test-unit test-repo test-component cover swag lint mocks postman
 
 ## --- Run ---------------------------------------------------------------
 
@@ -35,11 +35,6 @@ test:          ## all tests with the race detector (repository + component need 
 
 test-unit:     ## unit tests only (no Docker), with the race detector
 	go test -race ./... -short -count=1
-
-FUZZTIME ?= 30s
-fuzz:          ## run every fuzz test for FUZZTIME each: make fuzz FUZZTIME=2m
-	go test ./pkg/optional -run '^$$' -fuzz FuzzField_MatchesPointerDecoding -fuzztime $(FUZZTIME)
-	go test ./internal/model -run '^$$' -fuzz FuzzProduct_ApplyPatch -fuzztime $(FUZZTIME)
 
 test-repo:
 	go test ./internal/repository/... -count=1 -v
